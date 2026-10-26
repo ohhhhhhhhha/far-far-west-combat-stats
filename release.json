@@ -1,0 +1,10 @@
+{
+  "id": "FFWStats",
+  "version": "0.1.0-beta.1",
+  "channel": "beta",
+  "date": "2026-10-27",
+  "framework": "UE4SS",
+  "ue4ssBuild": "3.0.1-1181-g83330635",
+  "installation": "manual-copy",
+  "multiplayerValidation": "pending"
+}

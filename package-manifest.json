@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "FFWStats",
+  "mods": [
+    "FFWTeamSync",
+    "FFWStats"
+  ],
+  "modRoot": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods",
+  "directories": [
+    "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Data"
+  ],
+  "obsoleteFiles": [],
+  "files": [
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/main.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/main.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/AttackAdapter.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/AttackAdapter.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Config.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Config.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/EventBuffer.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/EventBuffer.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Events.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Events.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/GameAdapter.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/GameAdapter.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Json.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Json.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Panel.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Panel.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/PanelUmg.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/PanelUmg.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Protocol.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Protocol.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Session.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Session.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Stats.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Stats.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Store.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Store.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Sync.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Sync.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWTeamSync/build/main.dll",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWTeamSync/dlls/main.dll"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Locale.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Locale.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/English.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/English.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/CardText.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/CardText.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/MousePanel.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/MousePanel.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Hud.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Hud.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Contribution.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Contribution.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/HudSettings.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/HudSettings.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/SourceCatalog.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/SourceCatalog.lua"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/CanvasView.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/CanvasView.lua"
+    },
+    {
+      "source": "README.md",
+      "path": "README.md"
+    },
+    {
+      "source": "README.zh-CN.md",
+      "path": "README.zh-CN.md"
+    },
+    {
+      "source": "INSTALL.en.md",
+      "path": "INSTALL.en.md"
+    },
+    {
+      "source": "INSTALL.zh-CN.md",
+      "path": "INSTALL.zh-CN.md"
+    },
+    {
+      "source": "LICENSE",
+      "path": "LICENSE"
+    },
+    {
+      "source": "THIRD-PARTY-NOTICES.md",
+      "path": "THIRD-PARTY-NOTICES.md"
+    },
+    {
+      "source": "CHANGELOG.md",
+      "path": "CHANGELOG.md"
+    },
+    {
+      "source": "release.json",
+      "path": "release.json"
+    },
+    {
+      "source": "licenses/SteamNetworkingSockets.txt",
+      "path": "licenses/SteamNetworkingSockets.txt"
+    },
+    {
+      "source": "licenses/UE4SS.txt",
+      "path": "licenses/UE4SS.txt"
+    },
+    {
+      "source": "licenses/fmt.txt",
+      "path": "licenses/fmt.txt"
+    },
+    {
+      "source": "NATIVE-BUILD.md",
+      "path": "NATIVE-BUILD.md"
+    },
+    {
+      "source": "DEVELOPMENT.md",
+      "path": "DEVELOPMENT.md"
+    },
+    {
+      "source": "CONTRIBUTING.md",
+      "path": "CONTRIBUTING.md"
+    }
+  ],
+  "sourceFiles": [
+    ".gitignore",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "DEVELOPMENT.md",
+    "FFWTools/src/FFWStats/Scripts/AttackAdapter.lua",
+    "FFWTools/src/FFWStats/Scripts/CanvasView.lua",
+    "FFWTools/src/FFWStats/Scripts/CardText.lua",
+    "FFWTools/src/FFWStats/Scripts/Config.lua",
+    "FFWTools/src/FFWStats/Scripts/Contribution.lua",
+    "FFWTools/src/FFWStats/Scripts/English.lua",
+    "FFWTools/src/FFWStats/Scripts/EventBuffer.lua",
+    "FFWTools/src/FFWStats/Scripts/Events.lua",
+    "FFWTools/src/FFWStats/Scripts/GameAdapter.lua",
+    "FFWTools/src/FFWStats/Scripts/Hud.lua",
+    "FFWTools/src/FFWStats/Scripts/HudSettings.lua",
+    "FFWTools/src/FFWStats/Scripts/Json.lua",
+    "FFWTools/src/FFWStats/Scripts/Locale.lua",
+    "FFWTools/src/FFWStats/Scripts/MousePanel.lua",
+    "FFWTools/src/FFWStats/Scripts/Panel.lua",
+    "FFWTools/src/FFWStats/Scripts/PanelUmg.lua",
+    "FFWTools/src/FFWStats/Scripts/Protocol.lua",
+    "FFWTools/src/FFWStats/Scripts/Session.lua",
+    "FFWTools/src/FFWStats/Scripts/SourceCatalog.lua",
+    "FFWTools/src/FFWStats/Scripts/Stats.lua",
+    "FFWTools/src/FFWStats/Scripts/Store.lua",
+    "FFWTools/src/FFWStats/Scripts/Sync.lua",
+    "FFWTools/src/FFWStats/Scripts/main.lua",
+    "FFWTools/src/FFWTeamSync/Bridge.cpp",
+    "FFWTools/src/FFWTeamSync/SteamBinding.cpp",
+    "FFWTools/src/FFWTeamSync/Transport.cpp",
+    "FFWTools/src/FFWTeamSync/Transport.hpp",
+    "FFWTools/src/FFWTeamSync/build.ps1",
+    "FFWTools/tests/adapter_events_test.lua",
+    "FFWTools/tests/attack_adapter_test.lua",
+    "FFWTools/tests/common_mouse_test.lua",
+    "FFWTools/tests/event_buffer_test.lua",
+    "FFWTools/tests/game_adapter_test.lua",
+    "FFWTools/tests/overlay_mouse_engine.lua",
+    "FFWTools/tests/session_lifecycle_test.lua",
+    "FFWTools/tests/session_store_test.lua",
+    "FFWTools/tests/stats_bilingual_test.lua",
+    "FFWTools/tests/stats_config_test.lua",
+    "FFWTools/tests/stats_contribution_test.lua",
+    "FFWTools/tests/stats_core_test.lua",
+    "FFWTools/tests/stats_hud_settings_test.lua",
+    "FFWTools/tests/stats_hud_test.lua",
+    "FFWTools/tests/stats_mouse_test.lua",
+    "FFWTools/tests/stats_panel_test.lua",
+    "FFWTools/tests/stats_panel_umg_test.lua",
+    "FFWTools/tests/stats_protocol_test.lua",
+    "FFWTools/tests/stats_runtime_test.lua",
+    "FFWTools/tests/stats_source_category_test.lua",
+    "FFWTools/tests/stats_store_test.lua",
+    "FFWTools/tests/stats_tabs_test.lua",
+    "FFWTools/tests/stats_testlib.lua",
+    "FFWTools/tests/sync_test.lua",
+    "FFWTools/tests/transport_abi_test.cpp",
+    "FFWTools/tests/transport_test.cpp",
+    "INSTALL.en.md",
+    "INSTALL.zh-CN.md",
+    "LICENSE",
+    "NATIVE-BUILD.md",
+    "README.md",
+    "README.zh-CN.md",
+    "THIRD-PARTY-NOTICES.md",
+    "licenses/SteamNetworkingSockets.txt",
+    "licenses/UE4SS.txt",
+    "licenses/fmt.txt",
+    "package-manifest.json",
+    "package.json",
+    "package.mjs",
+    "release.json",
+    "run-tests.mjs"
+  ]
+}

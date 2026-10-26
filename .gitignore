@@ -1,0 +1,14 @@
+node_modules/
+dist/
+FFWTools/vendor/
+FFWTools/src/FFWTeamSync/build/
+**/Data/
+*.log
+*.pdb
+*.obj
+*.lib
+*.exp
+FFWTools/tests/*.json
+FFWTools/tests/*.bak
+FFWTools/tests/*.tmp
+FFWTools/tests/config-epoch*

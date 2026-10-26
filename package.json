@@ -1,0 +1,11 @@
+{
+  "name": "far-far-west-combat-stats",
+  "version": "0.1.0-beta.1",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "devDependencies": {
+    "jszip": "3.10.1",
+    "wasmoon": "1.16.0"
+  }
+}
