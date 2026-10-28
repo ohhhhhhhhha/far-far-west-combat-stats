@@ -68,7 +68,7 @@
       "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Sync.lua"
     },
     {
-      "source": "FFWTools/src/FFWTeamSync/build/main.dll",
+      "source": "FFWTools/src/FFWTeamSync/build-lan/runtime/main.dll",
       "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWTeamSync/dlls/main.dll"
     },
     {
@@ -164,10 +164,6 @@
       "path": "CONTRIBUTING.md"
     },
     {
-      "source": "FFWTools/src/RuntimeCompatibility/UE4SS_Signatures/ProcessLocalScriptFunction.lua",
-      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua"
-    },
-    {
       "source": "BUGFIX.en.md",
       "path": "BUGFIX.en.md"
     },
@@ -186,6 +182,10 @@
     {
       "source": "licenses/FrostburnModKit.txt",
       "path": "licenses/FrostburnModKit.txt"
+    },
+    {
+      "source": "FFWTools/src/FFWStats/Scripts/Connection.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods/FFWStats/Scripts/Connection.lua"
     }
   ],
   "sourceFiles": [
@@ -199,6 +199,7 @@
     "FFWTools/src/FFWStats/Scripts/CanvasView.lua",
     "FFWTools/src/FFWStats/Scripts/CardText.lua",
     "FFWTools/src/FFWStats/Scripts/Config.lua",
+    "FFWTools/src/FFWStats/Scripts/Connection.lua",
     "FFWTools/src/FFWStats/Scripts/Contribution.lua",
     "FFWTools/src/FFWStats/Scripts/English.lua",
     "FFWTools/src/FFWStats/Scripts/EventBuffer.lua",
@@ -219,19 +220,34 @@
     "FFWTools/src/FFWStats/Scripts/Sync.lua",
     "FFWTools/src/FFWStats/Scripts/main.lua",
     "FFWTools/src/FFWTeamSync/Bridge.cpp",
+    "FFWTools/src/FFWTeamSync/BuildApi.cs",
+    "FFWTools/src/FFWTeamSync/FFWTeamSyncLan.vcxproj",
+    "FFWTools/src/FFWTeamSync/LanTransport.cpp",
+    "FFWTools/src/FFWTeamSync/LanTransport.hpp",
+    "FFWTools/src/FFWTeamSync/LanTransportTests.vcxproj",
     "FFWTools/src/FFWTeamSync/SteamBinding.cpp",
     "FFWTools/src/FFWTeamSync/Transport.cpp",
     "FFWTools/src/FFWTeamSync/Transport.hpp",
-    "FFWTools/src/FFWTeamSync/build.ps1",
-    "FFWTools/src/RuntimeCompatibility/README.en.md",
-    "FFWTools/src/RuntimeCompatibility/README.zh-CN.md",
-    "FFWTools/src/RuntimeCompatibility/UE4SS_Signatures/ProcessLocalScriptFunction.lua",
-    "FFWTools/src/RuntimeCompatibility/licenses/FrostburnModKit.txt",
+    "FFWTools/src/FFWTeamSync/TransportTypes.hpp",
+    "FFWTools/src/FFWTeamSync/build-via-api.mjs",
+    "FFWTools/src/FFWTeamSync/compile-managed-worker.cjs",
+    "FFWTools/src/FFWTeamSync/inspect-pe.mjs",
+    "FFWTools/src/FFWTeamSync/prepare-native.mjs",
+    "FFWTools/src/FFWTeamSync/ue4ss-imports.json",
     "FFWTools/tests/adapter_events_test.lua",
     "FFWTools/tests/attack_adapter_test.lua",
     "FFWTools/tests/common_mouse_test.lua",
     "FFWTools/tests/event_buffer_test.lua",
     "FFWTools/tests/game_adapter_test.lua",
+    "FFWTools/tests/lan/LifecycleProbe.cs",
+    "FFWTools/tests/lan/NativeHarness.cs",
+    "FFWTools/tests/lan/native-auth-test.mjs",
+    "FFWTools/tests/lan/native-lifecycle-test.mjs",
+    "FFWTools/tests/lan/native-tests.mjs",
+    "FFWTools/tests/lan/real-socket-sessions.mjs",
+    "FFWTools/tests/lan/socket-session.lua",
+    "FFWTools/tests/lan_lifecycle_probe.hpp",
+    "FFWTools/tests/lan_transport_api.cpp",
     "FFWTools/tests/overlay_mouse_engine.lua",
     "FFWTools/tests/runtime_archive_test.mjs",
     "FFWTools/tests/session_lifecycle_test.lua",
@@ -239,11 +255,15 @@
     "FFWTools/tests/stats_bilingual_test.lua",
     "FFWTools/tests/stats_clock_context_test.lua",
     "FFWTools/tests/stats_config_test.lua",
+    "FFWTools/tests/stats_connection_test.lua",
+    "FFWTools/tests/stats_connection_ui_test.lua",
     "FFWTools/tests/stats_contribution_test.lua",
     "FFWTools/tests/stats_core_test.lua",
     "FFWTools/tests/stats_engine_harness.lua",
     "FFWTools/tests/stats_hud_settings_test.lua",
     "FFWTools/tests/stats_hud_test.lua",
+    "FFWTools/tests/stats_lan_adapter_test.lua",
+    "FFWTools/tests/stats_lan_identity_test.lua",
     "FFWTools/tests/stats_mouse_test.lua",
     "FFWTools/tests/stats_multiclient_test.lua",
     "FFWTools/tests/stats_panel_test.lua",

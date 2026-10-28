@@ -1,63 +1,19 @@
 # Far Far West 战斗统计
 
-[English](README.md) · [下载](https://github.com/ohhhhhhhhha/far-far-west-combat-stats/releases)
+[下载本测试版](https://github.com/ohhhhhhhhha/far-far-west-combat-stats/releases/tag/v0.2.0-beta.1) · [English](README.md) · [完整安装与联机指南](INSTALL.zh-CN.md)
 
-适用于 Windows / Steam 版 **Far Far West** 的战斗统计、自定义 HUD 与团队贡献排行。本仓库只包含统计 Mod 及其原生同步桥。
+中英双语统计面板和紧凑 HUD，随游戏语言切换。F8 打开详情，可用鼠标选择标签、分项和翻页；“显示设置”勾选游戏画面中显示的项目。统计包括含过量的结算伤害、来源分类、承伤、DPS 峰值、击杀、治疗、弹药、生存及团队贡献。未采集的数据保留“不可用”，部分覆盖明确标记。
 
-**0.1.0-beta.3 测试版。** 包含 beta.2 修复，并收紧原生时钟上下文：只使用重新确认的本机控制器和有效世界，不向时钟传递事件 Actor。新修复已通过 27 文件隔离套件和三客户端模拟，尚未进行新版游戏内验收。[验证结果与限制](BUGFIX.zh-CN.md)。
+**0.2.0-beta.1 为测试版。** 本机单实例 LAN 房主监听、任务伤害数据与回酒馆保留已由用户确认正常；实际两台电脑的 LAN 事件覆盖仍待验收。 新增 LAN/IP 配对同步，保留 Steam 路径。房主及客机均安装 FFWStats 和 FFWTeamSync，在 F8“联机设置”填写端口、房主 IPv4 和专属配对码。实际 PlayerId 对应玩家，昵称不用于身份绑定。生产 Session/Sync/Protocol/Store 已通过原生回环测试，覆盖丢帧、重连、切图、换局和独立保存。
 
-## 安装
+## 安装入口
 
-1. 完全退出并备份 Data。从 [Nexus mods/2](https://www.nexusmods.com/farfarwest/mods/2?tab=files) 安装 **UE4SS-FarFarWest 3.0.1.1183 Frostburn / UE5.8** 到 Steam 游戏根目录内的 FarFarWest/Binaries/Win64。
-2. 将 Stats beta.3 解压到临时目录，**只复制 GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods 下 FFWStats、FFWTeamSync 两个目录到已安装的 Mods**，保留 Data。
-3. **不要整份合并旧 beta.3 的 GameRoot**；旧包附带的兼容签名不能覆盖 Nexus 版本。保留框架全部配置与签名。
-4. 核对两个 enabled.txt 与组件文件，重启后按 F8。
+框架使用 [Nexus 游戏专用 UE4SS](https://www.nexusmods.com/farfarwest/mods/2?tab=files) 的 3.0.1.1183 Frostburn / UE5.8 玩家主文件。框架复制到 Steam 游戏根目录内的 FarFarWest/Binaries/Win64；本 Mod 的 GameRoot 内容合并到 Steam 游戏根目录。保留 Nexus 签名、配置和原有 Mod Data。双方 LAN 配置、连接验证、升级及回退请按[完整指南](INSTALL.zh-CN.md)操作。
 
-[完整安装、迁移与回退指南](INSTALL.zh-CN.md)。公开 ZIP 附件不变。**beta.3 不提供 LAN/IP 传输**；新的 LAN 组件仍在开发中，不在当前下载包内。
+F8 开关详情，鼠标点击标题与标签、使用分页按钮；PgUp/PgDn 切换指标，Home/End 切换区间。Stats 默认不占用 Nexus ConsoleEnabler 的 F10。当前局自动保存，回酒馆后保留上一局，下一局开始时切换。
 
-## 操作与显示
+团队贡献榜是依据已记录事件计算的加权参考，不是对玩家水平的客观评判。真实双机 LAN 事件覆盖仍需游戏内验收。此前公开的 beta.3 依赖 Steam，单独安装旧版不提供 LAN/IP 传输。
 
-- **F8** 打开或关闭详细面板，可用鼠标点击标签、分项标题、翻页及关闭。
-- **Page Up / Page Down** 切换指标，**Home / End** 切换区间。分项页使用鼠标；beta.3 的 F10 与 Nexus ConsoleEnabler 冲突，安装指南提供可选解绑方法。
-- 点击面板右上角的 **显示设置**，选择 HUD 数据、承伤细分和团队排行榜。设置自动保存，重启后保留。
-- 左上角显示自己的数据，并可显示前四名团队贡献。常驻 HUD 不占用鼠标，不影响瞄准。
-- 中英文跟随游戏语言切换；测量数据保留两位小数，次数保留整数。
+## 项目范围
 
-## 统计口径
-
-有对应事件时，可显示伤害及来源、承伤与生命/护盾细分、击杀/精英/首领/助攻、有效治疗、提供护盾、命中/暴击、弹药/换弹、生存、复活队友与死亡等数据。未采集到的指标显示不可用。
-
-伤害采用攻击结算值，包含超过目标剩余生命的部分。DPS 使用 **最近 5 秒伤害窗口**，每秒采样；HUD 的 **近30秒峰值** 是过去30秒内这些采样的最高值，**本局峰值** 是本局最高采样。详细面板保留滚动/平均 DPS 图，并提供独立的 **团队贡献** 页。
-
-主武器、副武器、法术、近战、持续伤害分类依据结算事件及已核对的装备目录。无法确定的仍列为来源未分类，旧记录的未分类总量无法倒推还原。单人任务显示 100% 团队伤害占比，这不代表事件覆盖已完整验证。
-
-## 团队贡献权重
-
-每项按照该玩家占已记录团队总量的比例分配权重；有正数观测值的类别才参与，参与权重归一为100%。
-
-| 项目 | 权重 |
-| --- | ---: |
-| 伤害 | 40 |
-| 击杀 | 10 |
-| 精英击杀 | 3 |
-| 首领击杀 | 5 |
-| 助攻 | 2 |
-| 对队友的有效治疗 | 12 |
-| 有效自疗 | 3 |
-| 提供护盾 | 5 |
-| 复活队友 | 15 |
-| 加入后存活时间比例 | 5 |
-
-承伤本身不加分。缺少或过期数据会标记为暂定，未知玩家不会被填入虚构分数。这是本局已记录表现的参考，不是玩家技术的绝对评价。
-
-## 保存与联机
-
-最近一局记录保留至新一局开始。运行后会在 `Mods/FFWStats/Data` 生成统计快照和 `hud-settings.json` 等本地文件。记录可能包含玩家名称及 Steam ID；**发布包和源码仓库均不包含这些记录**。更新时保留 Data 文件夹，公开反馈前请先移除个人信息。
-
-随包的 `FFWTeamSync` 使用游戏自身的 Steam 网络进行同步，需要同步数据的参与者均须安装两个组件。没有网络遥测上传端点。本测试版仍缺少客机完整团队数据的多人实测。
-
-## 开发与许可
-
-[开发说明](DEVELOPMENT.md) · [原生构建依赖](NATIVE-BUILD.md) · [参与贡献](CONTRIBUTING.md) · [更新记录](CHANGELOG.md)
-
-原创代码采用 MIT 许可；游戏来源文本、标识与第三方依赖保留原许可，详见 [声明](THIRD-PARTY-NOTICES.md)。框架为 UE4SS，不使用 BepInEx。
+本仓库只包含统计 Mod 和同步组件，不含修改器、刷卡功能、个人存档、采集到的玩家数据或 UE4SS 运行库。源码与运行包分开提供。参阅[开发说明](DEVELOPMENT.md)、[原生构建](NATIVE-BUILD.md)、[许可证](LICENSE)与[第三方声明](THIRD-PARTY-NOTICES.md)。

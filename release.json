@@ -1,12 +1,15 @@
 {
   "id": "FFWStats",
-  "version": "0.1.0-beta.3",
+  "version": "0.2.0-beta.1",
   "channel": "beta",
+  "status": "beta",
   "date": "2026-10-29",
   "framework": "UE4SS",
-  "ue4ssBuild": "3.0.1-1181-g83330635",
+  "frameworkDependency": "Nexus Far Far West mods/2, file 242, UE4SS-FarFarWest 3.0.1.1183 Frostburn",
   "installation": "manual-copy",
-  "multiplayerValidation": "pending",
-  "validation": "27 Lua test files; ten native-clock-context scenarios fail on beta.2 and pass on beta.3; native-game acceptance pending",
-  "nativeBridge": "Unchanged native bridge. Supplied 1183 DLL resolves 28 imports; no native execution certification."
+  "multiplayerValidation": "User confirmed local single-instance LAN host listening, mission damage data and retention after returning to saloon. Native host-plus-two-guest loopback tests passed. Actual two-PC LAN event coverage remains pending.",
+  "validation": "31 unchanged Lua test files and final native lifecycle/smoke/auth/nine real-TCP production-session scenarios passed. Local single-instance game checks confirmed; two-PC coverage pending.",
+  "nativeBridge": "Runtime Mod-owned LAN transport; Winsock starts only in explicit configure and is balanced by stop/disposal. Rebuilt and verified through native lifecycle, smoke, authentication and nine actual TCP production-Lua scenarios.",
+  "repository": "https://github.com/ohhhhhhhhha/far-far-west-combat-stats",
+  "download": "https://github.com/ohhhhhhhhha/far-far-west-combat-stats/releases/tag/v0.2.0-beta.1"
 }

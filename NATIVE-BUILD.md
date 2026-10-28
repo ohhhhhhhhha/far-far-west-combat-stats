@@ -1,49 +1,44 @@
-# FFWTeamSync native build / 原生构建
+# Native bridge build / 原生构建
 
-The source archive does not include the UE4SS SDK, Steamworks SDK, vendor sources or compiled binaries. The Lua mods and offline Lua tests can be used without compiling this bridge.
+Players use the runtime ZIP; compiling is unnecessary for installation. 开发者构建只生成本地产物，不安装、不启动游戏，也不改防火墙。
 
-源码包不附带 UE4SS SDK、Steamworks SDK、第三方源码或编译产物。Lua 组件及离线 Lua 测试不依赖此桥接模块的编译。
+## Inputs / 输入
 
-## Current supported build inputs
+- Windows x64; Visual Studio 2022 C++ v143 tools and Windows SDK 10.0.26100.0. Projects use C++20, /MD and one MSBuild node without parallel compiler jobs.
+- For the API route, installed .NET Framework 4.8 and .NET8, node-api-dotnet 0.9.31 and Node.js with Worker support. Roslyn and MSBuild are the installed Visual Studio assemblies.
+- The working Nexus mods/2 player 3.0.1.1183 framework DLL. The inspected SHA-256 is c273e7228687b647226fd63d7ca65888d313ece6be18996ec1320d00a5efe1f8. Do not redistribute the framework DLL in this project.
+- Separately obtain the pinned [UE4SS source headers](https://github.com/UE4SS-RE/RE-UE4SS/tree/8333063595fa3c49ad307f3b0f732accbb760d25), fmt 11.2.0 and compatible Steam networking headers with their licenses. The archive does not include these SDKs.
 
-`FFWTools/src/FFWTeamSync/build.ps1` is the retained Windows build recipe. It currently uses the following relative dependency layout. Obtain the dependencies separately and place them in this layout, or adapt the paths in your own build environment. This document does not claim an out-of-the-box SDK-free native build.
+~~~text
+<repository>/FFWTools/vendor/team-sync-ue4ss-1181/
+  source/RE-UE4SS-8333063595fa3c49ad307f3b0f732accbb760d25/
+    UE4SS/include/...
+    deps/first/{File,Input,String,LuaMadeSimple,LuaRaw}/include/...
+  fmt/fmt-11.2.0/include/...
+  steam/steamnetworkingtypes.h (and referenced headers)
+~~~
 
-`build.ps1` 是保留的 Windows 构建脚本，使用以下相对依赖布局。需自行取得依赖并按此放置，或在自己的构建环境中调整路径；此说明不声称无需 SDK 即可直接编译。
+## No-shell API route / 无 shell 构建接口
 
-```text
-<working root>/
-  FFWTools/
-    src/FFWTeamSync/{Bridge.cpp,Transport.cpp,Transport.hpp,SteamBinding.cpp,build.ps1}
-    tests/{transport_test.cpp,transport_abi_test.cpp}
-    vendor/
-      ue4ss-1181/ue4ss/UE4SS.dll
-      team-sync-ue4ss-1181/
-        source/RE-UE4SS-8333063595fa3c49ad307f3b0f732accbb760d25/
-          UE4SS/include/...
-          deps/first/{File,Input,String,LuaMadeSimple,LuaRaw}/include/...
-        fmt/fmt-11.2.0/include/...
-        steam/steamnetworkingtypes.h (and the headers it includes)
-  Engine/Binaries/ThirdParty/Steamworks/Steamv157/Win64/steam_api64.dll
-```
+Import buildNative from FFWTools/src/FFWTeamSync/build-via-api.mjs in a Node JavaScript host. Call it with root (repository folder), frameworkDll (the Nexus DLL path), and optionally visualStudio and dotnetPackageDirectory. This is a JavaScript API, not a shell command.
 
-- Visual Studio 2022 with C++ x64 tools and a Windows SDK. The script imports the Visual Studio developer shell; supply `-VisualStudio` if installed outside its default Community path.
-- [UE4SS source](https://github.com/UE4SS-RE/RE-UE4SS/tree/8333063595fa3c49ad307f3b0f732accbb760d25) at the pinned commit, including the listed first-party dependency headers. Match the UE4SS runtime binary to build 1181.
-- Required UE4SS DLL SHA-256: `ce5e3c46a920cc00b2817ac61e438c9162830290379d0b5b9c4dfc2b29459290`. The build script enforces this. Changing the runtime requires a matching-header/ABI rebuild and validation.
-- `{fmt}` 11.2.0 headers and Steam networking headers compatible with the API types in `Transport.hpp`. Use your lawful SDK/header source and retain its license; do not add the entire SDK or vendor tree to the release manifest.
-- The game's own `Steamv157` `steam_api64.dll` at the path shown above is used by the ABI test. Do not redistribute it. The build script derives `<working root>` from the parent of `FFWTools`; a clone outside the game directory must supply the expected file or adapt the build recipe locally.
+The helper:
 
-构建需要 Visual Studio 2022 的 C++ x64 工具及 Windows SDK、上述固定版本的 UE4SS 头文件和 DLL、`fmt` 11.2.0 头文件、与 `Transport.hpp` 接口类型匹配的 Steam 网络头文件。ABI 测试读取游戏自身的 Steamv157 DLL，不应重新分发它。脚本以 `FFWTools` 的父目录作为工作根；源码克隆在其他位置时，需要自行提供对应路径或调整本地构建脚本。
+1. Verifies the framework digest and its 28 required imports, generates the import definition from the actual export table, and prepares the pinned header override. Only GUITab.hpp's unused circular GUI.hpp include is omitted; declarations are unchanged.
+2. Uses the in-process Roslyn API on .NET8 to emit the managed build helper. It then creates an isolated .NET Framework AppDomain with the installed MSBuild.exe.config dependency redirects.
+3. Calls the public BuildManager API with a single node. The audited project uses standard C++ compiler/librarian/linker tasks; it contains no Exec, pre/post-build command, shell or batch step.
+4. Builds build-lan/runtime/main.dll and, by default, build-lan/tests/LanTransportTests.dll. Existing build/main.dll is preserved. Nothing is deployed or launched.
 
-## Build recipe
+在支持 Node JavaScript 的开发环境中导入上述 buildNative 函数并传入路径即可。没有批处理安装器，也不会调用 PowerShell、cmd 或远程 CI。MSBuild 标准任务会运行已安装的 C++ 编译器和链接器。
 
-From the bundle root / 在源码包根目录：
+## Visual Studio route / IDE 路线
 
-Use the retained build.ps1 recipe in a configured Visual Studio C++ environment. It is a developer helper, not an installer.
+Call prepareNative from prepare-native.mjs with root and frameworkDll to prepare the same verified inputs. Then open FFWTeamSyncLan.vcxproj in Visual Studio, select Release / x64 and use Build. Open LanTransportTests.vcxproj similarly for the native test library. No command-line invocation is required.
 
-The first command runs the native transport and ABI tests. The second also builds `FFWTools/src/FFWTeamSync/build/main.dll`. Both require the pinned dependencies because the script validates the framework before compilation. It does not deploy the bridge or launch the game. `package.mjs` packages only `main.dll` for the Stats runtime; `.obj`, `.lib`, `.exp`, executables and generated header overrides stay out of the source/runtime archives.
+## Tests / 测试
 
-第一条运行原生传输及 ABI 测试；第二条还生成 `main.dll`。两条都需要固定依赖，因为脚本会在编译前验证框架。脚本不部署模块，也不启动游戏。发布构建仅将 `main.dll` 放入 Stats 运行包，不携带其他编译产物或生成的头文件覆盖目录。
+The LAN test DLL contains the exact production LanTransport.cpp behind a test-only C ABI (FFWTools/tests/lan_transport_api.cpp). NativeHarness.cs loads that test DLL in-process. The JavaScript runners under FFWTools/tests/lan use real loopback TCP connections and independent Wasmoon Lua profiles running production Session/Sync/Protocol/Store. Their TCP proxy drops/duplicates actual framed bytes and disconnects real sockets; it is not a substitute transport.
 
-Native unit/ABI tests verify their declared boundaries. They do not prove multiplayer delivery, complete event capture or live game compatibility. Full-team runtime validation remains outstanding for this experimental release.
+The source includes the original Steam transport tests and the new 31-file Lua regression suite. Native binaries, SDKs, generated import libraries, build logs, synthetic evidence files and local Data are not included in the source ZIP.
 
-原生单元及 ABI 测试只验证其覆盖的边界，不能证明多人传输、完整事件采集或游戏内兼容性；本实验版仍缺少全队运行验证。
+Static resolution of the UE4SS imports and loopback transmission do not establish two-PC in-game compatibility or complete gameplay-event coverage. The new connection UI and real game LAN run remain acceptance items.

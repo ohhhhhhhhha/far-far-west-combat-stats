@@ -12,3 +12,6 @@ FFWTools/tests/*.json
 FFWTools/tests/*.bak
 FFWTools/tests/*.tmp
 FFWTools/tests/config-epoch*
+
+**/build-lan/
+**/Data/

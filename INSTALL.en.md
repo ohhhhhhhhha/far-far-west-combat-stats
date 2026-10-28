@@ -1,37 +1,116 @@
-# Install the published 0.1.0-beta.3 release
+# Installation and team setup (0.2.0-beta.1 beta)
 
-**Use the game-specific [UE4SS for FarFarWest Nexus package](https://www.nexusmods.com/farfarwest/mods/2?tab=files). Beta.3 uses the Steam synchronization path; it does not provide LAN/IP transport. A new LAN component is in development and is not part of the current download.**
+This is a beta Combat Stats release using UE4SS. Install both FFWStats and FFWTeamSync. Native loopback host-plus-two-guest tests passed. In-game single-instance host listening, mission damage data and retained saloon results were confirmed by the user; real two-PC LAN event coverage remains pending.
 
-## Find the two destinations
+[Project](https://github.com/ohhhhhhhhha/far-far-west-combat-stats) · [Download 0.2.0-beta.1](https://github.com/ohhhhhhhhha/far-far-west-combat-stats/releases/tag/v0.2.0-beta.1)
 
-Steam → Manage → Browse local files opens the game root containing FarFarWest.exe. The framework goes inside FarFarWest/Binaries/Win64, next to FarFarWest-Win64-Shipping.exe.
+## Locate the destinations
 
-1. Fully exit the game. Back up the existing framework and needed Mod Data outside Mods before updating.
-2. Download the Nexus player main file **UE4SS-FarFarWest 3.0.1.1183**, Frostburn / UE5.8, by anro / AnroG772 (inspected file ID 242). Do not select old UE5.7 or zDEV files.
-3. Extract its root dwmapi.dll, ue4ss and accompanying files into that inner Win64 directory. Preserve the full Nexus settings and all three game signatures: FName_Constructor.lua, GNatives.lua and ProcessLocalScriptFunction.lua.
-4. Check that the game reaches the title or saloon, then exit completely.
-5. Extract the Stats beta.3 runtime ZIP to a temporary folder. **Copy only the two folders FFWStats and FFWTeamSync from GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods into the installed ue4ss/Mods.** Preserve FFWStats/Data if it exists.
-6. **Do not merge the old beta.3 GameRoot wholesale. It includes a fallback ProcessLocalScriptFunction.lua that must not overwrite the working Nexus signature.** Do not replace the framework DLL, settings, signatures or mods.txt with files from another package.
-7. Confirm FFWStats/Scripts/main.lua, FFWStats/enabled.txt, FFWStats/Data/, FFWTeamSync/dlls/main.dll and FFWTeamSync/enabled.txt. The marker must not be named enabled.txt.txt.
-8. Restart and press F8 in the saloon. Mouse controls should select tabs, subitems, pages and HUD options.
+Steam → Far Far West → Manage → Browse local files opens the game root containing FarFarWest.exe.
 
-## Multiplayer and controls
+| Archive contents | Destination |
+| --- | --- |
+| Nexus framework: dwmapi.dll, ue4ss and accompanying files | FarFarWest/Binaries/Win64 inside the game root, beside FarFarWest-Win64-Shipping.exe |
+| Contents inside this Mod archive's GameRoot folder | The game root opened by Steam |
 
-Install both components at the same version on the host and all participating guests. Beta.3 uses native Steam identities/messages; a LAN/IP room can have different identities and is not supported by this bridge. Installing it on every LAN PC does not remove that limitation. Do not substitute names, roster positions or invented Steam IDs.
+Copy the contents, without an extra GameRoot or FarFarWest wrapper folder.
 
-F8 toggles the panel; PgUp/PgDn selects metrics, Home/End selects scope. **Beta.3 binds F10 for subpages, which conflicts with Nexus ConsoleEnabler. Use the mouse paging buttons.** To remove the Stats F10 binding in this version, with the game closed open FFWStats/Scripts/Config.lua in a text editor and change nextPage='F10' to nextPage=false. Keep the other bindings intact; restart afterward. This is an optional manual edit, not a batch command.
+## Install the game-specific framework
 
-Metrics use observed events; unavailable and partial flags remain meaningful. A Steam handshake does not prove full event coverage. Last-mission statistics and HUD choices are saved in FFWStats/Data. Keep that whole directory during upgrades. Actual native-game/multiplayer acceptance remains documented in the release notes.
+1. Fully exit the game; returning to its title screen does not reload mods.
+2. Download the player main file **UE4SS-FarFarWest 3.0.1.1183** from [UE4SS for FarFarWest on Nexus](https://www.nexusmods.com/farfarwest/mods/2?tab=files), by anro / AnroG772. The inspected Frostburn / UE5.8 file is ID 242. Do not select the older UE5.7 archives or zDEV developer packages.
+3. Extract it to a temporary directory. Copy its root dwmapi.dll, ue4ss and accompanying files into the Win64 destination above.
+4. Verify ue4ss/UE4SS.dll, ue4ss/UE4SS-settings.ini, and all three UE4SS_Signatures files: FName_Constructor.lua, GNatives.lua, ProcessLocalScriptFunction.lua.
+5. Launch normally and reach the title/saloon, then exit completely. This checks framework startup only.
 
-## Troubleshooting, migration and rollback
+The game-specific signatures and settings are part of this dependency. A generic upstream GitHub archive alone is not the complete framework setup.
 
-- Startup crash: verify the inner Win64 destination, Frostburn build and complete game signatures. Generic upstream GitHub archives alone are not the recommended complete setup.
-- Old framework migration: back up dwmapi.dll, the entire ue4ss folder and needed Mod Data outside loading paths. Move/rename the old framework aside, install Nexus cleanly, install the two Stats folders, and restore only required Data. Do not restore old engine overrides/settings/signatures/caches. Never delete the old framework without preserving data.
-- No F8: confirm runtime versus source ZIP, exact directory/marker names and a full restart. Keep the exact UE4SS.log error.
-- Waiting for identity in LAN: this is a known beta.3 transport limitation; the new LAN component is not yet released.
-- Save failure: Data must exist and be writable. Do not replace it while the game runs.
-- Non-ASCII Lua path failure: use Steam storage management to move to an ASCII path; no system-locale change is required.
-- Rollback: close the game, restore a matching backed-up Stats Lua/native component set and its Data, and preserve the working Nexus framework.
-- Uninstall: back up Data, then remove/disable only FFWStats and FFWTeamSync. Keep UE4SS if other mods require it.
+## Install Combat Stats on every participant's PC
 
-Published beta.3 ZIP attachments are unchanged. This guide corrects installation and support scope for those existing files. Do not publish personal saves, pairing codes or unredacted diagnostic archives when reporting a problem.
+1. Use the runtime ZIP, not the source ZIP.
+2. Merge the contents of GameRoot into the Steam game root.
+3. Confirm the resulting layout:
+
+~~~text
+FarFarWest/Binaries/Win64/ue4ss/Mods/
+  FFWStats/
+    enabled.txt
+    Scripts/main.lua
+    Scripts/Connection.lua
+    Data/                 (empty on a first installation)
+  FFWTeamSync/
+    enabled.txt
+    dlls/main.dll
+~~~
+
+Both enabled.txt markers must exist with the correct extension. They enable the Lua and native components; the package does not replace your mods.txt. Restart the game, enter the saloon and press F8. Use the mouse to select tabs, page through items, close the panel or change HUD options. Connection settings work before a mission begins.
+
+This release contains no framework DLL, global settings or signature replacement. Preserve all Nexus framework files.
+
+## Solo and Steam rooms
+
+Solo can retain the default Steam mode. In Steam multiplayer, install the matching full Stats package on the host and every teammate who needs synchronized statistics, then join the same game room. The existing Steam transport is used when its identities are available.
+
+For LAN/IP rooms follow the next steps. Having a Steam account does not establish a Steam mapping for the game's LAN PlayerState.
+
+## LAN / direct IP — host
+
+Create the game's LAN room and let teammates join the saloon first. Everyone needs the same FFWStats and FFWTeamSync version.
+
+1. F8 → Connection → LAN / direct IP.
+2. Confirm the displayed role is Host and a local PlayerId is available. Wait for the game roster if it is missing; do not invent an ID.
+3. Choose a statistics TCP port, default **46055**, and select Start host sync. This port is independent of the game's own connection port.
+4. Give teammates your LAN IPv4 address and this statistics port. The host does not enter an address; it listens on this PC's network interfaces.
+5. Match the teammate's displayed PlayerId to the current roster row. Select Generate / view for that row. Identical display names do not affect identity binding.
+6. Select all and copy the code from the field below, and give it only to that assigned teammate. Each teammate uses a separate code.
+7. Wait for the authenticated connection count to increase before starting the mission.
+
+Codes are held in memory for this room. During travel, the roster can arrive incrementally; absent paired peers remain marked roster pending. If a peer has actually left, the host can use Revoke on that row. Normal map travel keeps pairing and reconnects automatically. Leaving the room, returning to title, stopping synchronization, restarting the host, or changing PlayerId requires new pairing.
+
+## LAN / direct IP — guest
+
+1. Join the host's game LAN room and enter the saloon.
+2. F8 → Connection → LAN / direct IP. Confirm Guest and tell the host your displayed PlayerId.
+3. Enter the host's LAN IPv4 address and matching statistics port.
+4. Paste the code generated specifically for your PlayerId and select Connect to host. Another teammate's code is rejected.
+5. Wait for Authenticated connections: 1, then let the host start the mission. Temporary disconnects retry automatically.
+
+Mode, host address and port are saved; pairing codes are not. Changing identity mode or rebuilding a room is restricted to the saloon. A successful network handshake proves connectivity, not complete gameplay-event coverage.
+
+## Verify data and saved results
+
+- Start a new mission. Have host and guest each damage an enemy, then inspect F8 Damage and Damage sources. Clients should receive the same host-authored snapshot after the short transport/UI refresh delay.
+- Reload once and verify attribution to the player who performed it. Revives, healing and other fields only count events the game adapter can establish.
+- Unavailable means unobserved. An asterisk means partial data. Missing components/events/disconnected intervals are not estimated as accurate zeroes.
+- Returning to the saloon retains the last mission. The next mission switches the display to the new run. FFWStats/Data/last-mission.json is saved periodically with temporary-file and backup replacement.
+- Each PC has an independent save. Host-only observations reach a guest save only after synchronization. New room pairing isolates old queues even when numeric PlayerIds are reused.
+- hud-settings.json stores HUD choices; connection-settings.json stores nonsecret connection preferences; boot-epoch.txt stores the persistent synchronization epoch. Preserve the entire Data directory rather than editing these files independently.
+- F8 toggles the panel; PgUp/PgDn selects metrics; Home/End selects scope. Use mouse buttons for subpages. Stats does not bind F10 by default because the Nexus ConsoleEnabler may use it.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Startup crash | Correct inner Win64 destination, Nexus Frostburn player main file, all signatures/settings; remove mixed old UE5.7 settings through the backed-up migration below. |
+| F8 does nothing | Runtime versus source ZIP, both component directories, enabled.txt extension and a full restart. Keep the exact UE4SS.log error. |
+| Native component unavailable | Matching FFWTeamSync/dlls/main.dll and Lua version. The old beta.3 bridge has no LAN API. |
+| Missing or duplicate PlayerId | Wait for the roster and confirm the same game room. Do not substitute a name, Steam ID or roster position. Rejoin and pair again if it persists. |
+| Invalid pairing code | Get a fresh code for your current PlayerId, not another teammate or previous room. |
+| Stuck connecting | Host listener is started, IPv4/port match, PCs can reach each other, and existing network access policy permits it. The Mod does not change firewall rules. |
+| Connected but no mission data | The saloon does not create a mission. Enter a new mission, check matching components, current roster and coverage indicators. |
+| Save failure | Data exists and is writable; do not replace it while the game runs. |
+| Lua path error with non-ASCII installation path | Move the game using Steam storage management to an ASCII path and retry. No system-locale change is required. |
+
+For a report provide version, host/guest role, connection mode and exact error. Do not publicly upload saves, the whole Data folder, pairing codes or raw logs containing personal information.
+
+## Upgrade, migrate, roll back or uninstall
+
+**Mod update:** close the game, back up both components and FFWStats/Data outside Mods, then replace the two component directories with the new version while preserving Data. Update all participants together and pair again. An enabled backup kept inside Mods may load twice.
+
+**Old framework migration:** back up dwmapi.dll, the entire ue4ss directory and every needed Mod Data folder outside the game's loading paths. Move/rename the old framework aside, install the Nexus package cleanly, install current content packages, then restore only required Data. Do not restore old global settings, caches, signatures or forced engine-version overrides. Never delete the entire framework without preserving needed data.
+
+**Currently published beta.3:** its archive contains a fallback signature. If you continue using beta.3, copy only FFWStats and FFWTeamSync from GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods. Preserve the Nexus signatures/settings; do not merge the old archive's UE4SS_Signatures. Beta.3 uses the Steam path and does not establish LAN/IP support.
+
+**Rollback:** exit, restore a matching backed-up Lua/native component set and its Data. Old versions cannot use the new LAN transport. Keep the complete Nexus framework. 
+
+**Uninstall:** close the game, back up Data, then remove/disable only FFWStats and FFWTeamSync. Keep UE4SS if other mods need it. Stats does not modify permanent game progression.

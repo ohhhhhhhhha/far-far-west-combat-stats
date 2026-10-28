@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-beta.1 — beta
+
+- Native paired LAN/IP transport and bilingual F8 Connection settings.
+- Room-scoped replicated PlayerId; no Steam requirement on the LAN path.
+- Real socket loss/reconnect/travel/save coverage and unauthenticated-inbox regression.
+- Nexus2 framework installation contract; no framework/signature payload.
+- Default F10 left to ConsoleEnabler; mouse paging retained.
+
 ## 0.1.0-beta.3 — 2026-10-29
 
 - Native clock calls use a freshly selected local controller with a valid world; event actors/managers are never forwarded.

@@ -12,9 +12,9 @@ FFWTools 原创代码和文档采用随附的 MIT 许可证。这是非官方社
 
 ## UE4SS
 
-The runtime requires a separately installed, compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS). The native bridge was built against build 1181 and source commit `8333063595fa3c49ad307f3b0f732accbb760d25`. [UE4SS is MIT licensed](https://github.com/UE4SS-RE/RE-UE4SS/blob/main/LICENSE), copyright (c) 2022 Narknon. Its DLL, proxy loader and SDK are not bundled. The applicable notice is preserved in `licenses/UE4SS.txt` because the bridge uses its headers/API.
+Players install the game-specific [Nexus UE4SS package](https://www.nexusmods.com/farfarwest/mods/2). [UE4SS upstream](https://github.com/UE4SS-RE/RE-UE4SS) is credited as the framework source. This bridge uses pinned headers from source commit `8333063595fa3c49ad307f3b0f732accbb760d25`. [UE4SS is MIT licensed](https://github.com/UE4SS-RE/RE-UE4SS/blob/main/LICENSE), copyright (c) 2022 Narknon. Its DLL, proxy loader and SDK are not bundled. The applicable notice is preserved in `licenses/UE4SS.txt` because the bridge uses its headers/API.
 
-运行时依赖另行安装的兼容 UE4SS。原生桥接模块针对 build 1181 及上述源码提交构建。发布包不附带 UE4SS DLL、代理加载器或 SDK；对应版权声明保留在 `licenses/UE4SS.txt`。
+玩家安装 Nexus 游戏专用 UE4SS 3.0.1.1183；原生桥使用上述固定提交的头文件，所需 28 个导出均已在该 Nexus DLL 中核对。发布包不附带 UE4SS DLL、代理加载器或 SDK；对应版权声明保留在 `licenses/UE4SS.txt`。
 
 ## Native build headers / 原生构建头文件
 
@@ -30,6 +30,6 @@ No external save-editor implementation is included or licensed by this project. 
 
 JSZip 3.10.1 is a separately installed development dependency (MIT or GPLv3); Wasmoon 1.16.0 provides the development Lua test host (MIT). Neither is bundled in the game runtime.
 
-## Far Far West startup signature
+## Historical startup-signature attribution
 
-ProcessLocalScriptFunction.lua comes from [halu103/farfarwest-frostburn-modkit](https://github.com/halu103/farfarwest-frostburn-modkit/blob/main/config/ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua), MIT. The complete original notice is retained in licenses/FrostburnModKit.txt. The framework and game binaries are not redistributed.
+This release ships no framework signature override. The Nexus dependency owns the signatures. Earlier project releases used ProcessLocalScriptFunction.lua from [halu103/farfarwest-frostburn-modkit](https://github.com/halu103/farfarwest-frostburn-modkit/blob/main/config/ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua), MIT. The complete original notice is retained in licenses/FrostburnModKit.txt. The framework and game binaries are not redistributed.
