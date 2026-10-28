@@ -29,3 +29,7 @@ No external save-editor implementation is included or licensed by this project. 
 ## Development-only packaging
 
 JSZip 3.10.1 is a separately installed development dependency (MIT or GPLv3); Wasmoon 1.16.0 provides the development Lua test host (MIT). Neither is bundled in the game runtime.
+
+## Far Far West startup signature
+
+ProcessLocalScriptFunction.lua comes from [halu103/farfarwest-frostburn-modkit](https://github.com/halu103/farfarwest-frostburn-modkit/blob/main/config/ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua), MIT. The complete original notice is retained in licenses/FrostburnModKit.txt. The framework and game binaries are not redistributed.

@@ -4,16 +4,16 @@
 
 Combat statistics, a configurable in-game HUD and a team contribution ranking for **Far Far West** on Windows (Steam). This repository contains the statistics Mod and its native synchronization bridge.
 
-**Version 0.1.0-beta.1 — beta.** The latest solo build has been checked in game: source classification, the solo 100% damage share, panel layout and saved HUD preferences. Full host/guest multiplayer collection has not yet been validated. Missing events are shown as unavailable or partial; the ranking describes recorded contributions.
+**Version 0.1.0-beta.2 — beta.** Repairs F8 startup, world-transition cleanup, identity/epoch recovery and per-peer snapshot retries. The new fixes pass the isolated 26-file suite and three-client simulation; they have not yet received a new in-game acceptance run. [Validation and remaining limits](BUGFIX.en.md).
 
 ## Install
 
-1. Install compatible **UE4SS build 1181** separately. The bridge targets revision `8333063595fa3c49ad307f3b0f732accbb760d25` (`3.0.1-1181-g83330635`). Other builds need matching ABI validation.
-2. Close the game and download **FFWStats-0.1.0-beta.1.zip** from Releases.
+1. Before launching the game, install compatible **UE4SS build 1181** separately. The bridge targets revision `8333063595fa3c49ad307f3b0f732accbb760d25` (`3.0.1-1181-g83330635`). Other builds need matching ABI validation.
+2. Close the game and download **FFWStats-0.1.0-beta.2.zip** from Releases.
 3. Open its `GameRoot` folder and copy the enclosed `FarFarWest` folder into your Steam game installation folder, merging folders.
-4. Confirm that both `ue4ss/Mods/FFWStats` and `ue4ss/Mods/FFWTeamSync` exist. Both are required, including in solo play. Start the game normally.
+4. Confirm that the included `ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua` is present before the first launch. Also confirm that both `ue4ss/Mods/FFWStats` and `ue4ss/Mods/FFWTeamSync` exist. Both are required, including in solo play. Start the game normally.
 
-Installation uses File Explorer only. The package does not include UE4SS or overwrite `mods.txt`. [Full installation and update instructions](INSTALL.en.md).
+Installation uses File Explorer only. The package does not include UE4SS or overwrite `mods.txt`. [Full installation and update instructions](INSTALL.en.md) · [Startup signature](UE4SS-COMPATIBILITY.en.md).
 
 ## Controls and display
 

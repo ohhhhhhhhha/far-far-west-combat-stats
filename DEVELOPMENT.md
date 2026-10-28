@@ -13,4 +13,4 @@ For a JavaScript-hosted environment, import `run-tests.mjs` and call `runTests({
 
 Import `package.mjs` and call `buildRelease({root, outputDirectory, JSZip})` to produce the allowlisted runtime ZIP, source ZIP and checksums. A compiled `FFWTools/src/FFWTeamSync/build/main.dll` is required; native build outputs are not part of the source ZIP. The packaging API does not install, launch or upload anything.
 
-Release validation: exported Lua tests run in isolated Lua 5.4 WASM with Windows rename behavior; runtime Lua/DLL hashes are compared with the installed build used for solo acceptance. The native DLL is reused without recompilation in this release. That evidence does not establish full multiplayer event coverage.
+Release validation: 26 exported Lua test files run in a fresh Lua 5.4 WASM filesystem with Windows rename behavior. Candidate runtime Lua hashes match candidate source; the native bridge DLL matches the prior installed binary and was not rebuilt. New fixes have not been deployed or accepted in the actual game by this preparation task. See BUGFIX.en.md for simulated versus native evidence.

@@ -4,16 +4,16 @@
 
 适用于 Windows / Steam 版 **Far Far West** 的战斗统计、自定义 HUD 与团队贡献排行。本仓库只包含统计 Mod 及其原生同步桥。
 
-**0.1.0-beta.1 测试版。** 已在单人游戏中确认伤害来源分类、单人 100% 伤害占比、面板布局及 HUD 设置保存。完整的房主/客机团队采集仍待多人实测。未观测的数据会标记为不可用或部分数据，排行榜只反映已记录的贡献。
+**0.1.0-beta.2 测试版。** 修复 F8 启动、跨世界清理、身份/启动序号恢复及逐队友快照重传。新修复已通过 26 文件隔离套件和三客户端模拟，尚未进行新版游戏内验收。[验证结果与限制](BUGFIX.zh-CN.md)。
 
 ## 安装
 
-1. 另行安装兼容的 **UE4SS build 1181**。原生桥使用固定源码提交 `8333063595fa3c49ad307f3b0f732accbb760d25`（`3.0.1-1181-g83330635`）；其他版本需要匹配的 ABI 验证。
-2. 完全退出游戏，从 Releases 下载 **FFWStats-0.1.0-beta.1.zip**。
+1. 首次启动前，另行安装兼容的 **UE4SS build 1181**。原生桥使用固定源码提交 `8333063595fa3c49ad307f3b0f732accbb760d25`（`3.0.1-1181-g83330635`）；其他版本需要匹配的 ABI 验证。
+2. 完全退出游戏，从 Releases 下载 **FFWStats-0.1.0-beta.2.zip**。
 3. 打开压缩包中的 `GameRoot` 文件夹，把里面的 `FarFarWest` 文件夹复制到 Steam 游戏安装目录，合并文件夹。
-4. 确认 `ue4ss/Mods/FFWStats` 与 `ue4ss/Mods/FFWTeamSync` 均存在。单人模式也需要两者。正常启动游戏。
+4. 首次启动前先确认已装入 `ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua`。同时确认 `ue4ss/Mods/FFWStats` 与 `ue4ss/Mods/FFWTeamSync` 均存在。单人模式也需要两者。正常启动游戏。
 
-安装只需资源管理器复制文件。包内不附带 UE4SS，不覆盖 `mods.txt`。[完整安装、更新及卸载说明](INSTALL.zh-CN.md)。
+安装只需资源管理器复制文件。包内不附带 UE4SS，不覆盖 `mods.txt`。[完整安装、更新及卸载说明](INSTALL.zh-CN.md) · [启动签名说明](UE4SS-COMPATIBILITY.zh-CN.md)。
 
 ## 操作与显示
 

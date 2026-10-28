@@ -1,5 +1,9 @@
 # Installation and updates
 
+Install the official framework and the included game-specific signature before the first launch. The archive places ProcessLocalScriptFunction.lua in FarFarWest/Binaries/Win64/ue4ss/UE4SS_Signatures. Keep this shared file if another installed component still needs it. See UE4SS-COMPATIBILITY.en.md.
+
+Non-ASCII paths: extraction is tested with Node and virtual Lua paths. Native Windows Lua uses narrow file APIs; compatibility with every Windows system encoding is not established. If framework/script loading fails in a non-ASCII library path, use an ASCII-named Steam library. No system locale or registry changes are required.
+
 Windows / Steam, with separately installed UE4SS build 1181 (3.0.1-1181-g83330635). The game data version used during development was 0.3.0.7. The native bridge targets that UE4SS ABI; a different UE4SS build is not automatically interchangeable.
 
 1. Completely close the game.

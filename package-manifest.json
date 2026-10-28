@@ -162,10 +162,36 @@
     {
       "source": "CONTRIBUTING.md",
       "path": "CONTRIBUTING.md"
+    },
+    {
+      "source": "FFWTools/src/RuntimeCompatibility/UE4SS_Signatures/ProcessLocalScriptFunction.lua",
+      "path": "GameRoot/FarFarWest/Binaries/Win64/ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua"
+    },
+    {
+      "source": "BUGFIX.en.md",
+      "path": "BUGFIX.en.md"
+    },
+    {
+      "source": "BUGFIX.zh-CN.md",
+      "path": "BUGFIX.zh-CN.md"
+    },
+    {
+      "source": "UE4SS-COMPATIBILITY.en.md",
+      "path": "UE4SS-COMPATIBILITY.en.md"
+    },
+    {
+      "source": "UE4SS-COMPATIBILITY.zh-CN.md",
+      "path": "UE4SS-COMPATIBILITY.zh-CN.md"
+    },
+    {
+      "source": "licenses/FrostburnModKit.txt",
+      "path": "licenses/FrostburnModKit.txt"
     }
   ],
   "sourceFiles": [
     ".gitignore",
+    "BUGFIX.en.md",
+    "BUGFIX.zh-CN.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "DEVELOPMENT.md",
@@ -197,29 +223,40 @@
     "FFWTools/src/FFWTeamSync/Transport.cpp",
     "FFWTools/src/FFWTeamSync/Transport.hpp",
     "FFWTools/src/FFWTeamSync/build.ps1",
+    "FFWTools/src/RuntimeCompatibility/README.en.md",
+    "FFWTools/src/RuntimeCompatibility/README.zh-CN.md",
+    "FFWTools/src/RuntimeCompatibility/UE4SS_Signatures/ProcessLocalScriptFunction.lua",
+    "FFWTools/src/RuntimeCompatibility/licenses/FrostburnModKit.txt",
     "FFWTools/tests/adapter_events_test.lua",
     "FFWTools/tests/attack_adapter_test.lua",
     "FFWTools/tests/common_mouse_test.lua",
     "FFWTools/tests/event_buffer_test.lua",
     "FFWTools/tests/game_adapter_test.lua",
     "FFWTools/tests/overlay_mouse_engine.lua",
+    "FFWTools/tests/runtime_archive_test.mjs",
     "FFWTools/tests/session_lifecycle_test.lua",
     "FFWTools/tests/session_store_test.lua",
     "FFWTools/tests/stats_bilingual_test.lua",
     "FFWTools/tests/stats_config_test.lua",
     "FFWTools/tests/stats_contribution_test.lua",
     "FFWTools/tests/stats_core_test.lua",
+    "FFWTools/tests/stats_engine_harness.lua",
     "FFWTools/tests/stats_hud_settings_test.lua",
     "FFWTools/tests/stats_hud_test.lua",
     "FFWTools/tests/stats_mouse_test.lua",
+    "FFWTools/tests/stats_multiclient_test.lua",
     "FFWTools/tests/stats_panel_test.lua",
     "FFWTools/tests/stats_panel_umg_test.lua",
+    "FFWTools/tests/stats_portability_test.lua",
     "FFWTools/tests/stats_protocol_test.lua",
     "FFWTools/tests/stats_runtime_test.lua",
+    "FFWTools/tests/stats_simulated_team.lua",
     "FFWTools/tests/stats_source_category_test.lua",
+    "FFWTools/tests/stats_startup_ui_test.lua",
     "FFWTools/tests/stats_store_test.lua",
     "FFWTools/tests/stats_tabs_test.lua",
     "FFWTools/tests/stats_testlib.lua",
+    "FFWTools/tests/stats_world_lifecycle_test.lua",
     "FFWTools/tests/sync_test.lua",
     "FFWTools/tests/transport_abi_test.cpp",
     "FFWTools/tests/transport_test.cpp",
@@ -230,6 +267,9 @@
     "README.md",
     "README.zh-CN.md",
     "THIRD-PARTY-NOTICES.md",
+    "UE4SS-COMPATIBILITY.en.md",
+    "UE4SS-COMPATIBILITY.zh-CN.md",
+    "licenses/FrostburnModKit.txt",
     "licenses/SteamNetworkingSockets.txt",
     "licenses/UE4SS.txt",
     "licenses/fmt.txt",

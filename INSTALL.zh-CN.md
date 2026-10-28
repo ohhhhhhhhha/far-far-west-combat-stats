@@ -1,5 +1,9 @@
 # 安装与更新
 
+首次启动前，必须先安装官方框架和包内游戏签名。压缩包把 ProcessLocalScriptFunction.lua 放在 FarFarWest/Binaries/Win64/ue4ss/UE4SS_Signatures。其他已装组件仍依赖它时，卸载单个组件请保留该共享文件。参见 UE4SS-COMPATIBILITY.zh-CN.md。
+
+中文路径：已检查 Node 解压和 Lua 虚拟路径；原生 Windows Lua 使用窄字符文件 API，尚未验证所有系统编码。若中文库路径导致框架/脚本无法加载，可使用纯 ASCII 名称的 Steam 库路径，无需修改系统区域或注册表。
+
 适用于 Windows / Steam，需要另行安装 UE4SS build 1181（3.0.1-1181-g83330635）。开发时使用的游戏数据版本为0.3.0.7。原生桥依赖此 UE4SS ABI，其他版本不可直接视为兼容。
 
 1. 完全退出游戏。
