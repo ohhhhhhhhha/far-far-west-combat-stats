@@ -8,17 +8,17 @@
 
 ## 安装
 
-1. 首次启动前，另行安装兼容的 **UE4SS build 1181**。原生桥使用固定源码提交 `8333063595fa3c49ad307f3b0f732accbb760d25`（`3.0.1-1181-g83330635`）；其他版本需要匹配的 ABI 验证。
-2. 完全退出游戏，从 Releases 下载 **FFWStats-0.1.0-beta.3.zip**。
-3. 打开压缩包中的 `GameRoot` 文件夹，把里面的 `FarFarWest` 文件夹复制到 Steam 游戏安装目录，合并文件夹。
-4. 首次启动前先确认已装入 `ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua`。同时确认 `ue4ss/Mods/FFWStats` 与 `ue4ss/Mods/FFWTeamSync` 均存在。单人模式也需要两者。正常启动游戏。
+1. 完全退出并备份 Data。从 [Nexus mods/2](https://www.nexusmods.com/farfarwest/mods/2?tab=files) 安装 **UE4SS-FarFarWest 3.0.1.1183 Frostburn / UE5.8** 到 Steam 游戏根目录内的 FarFarWest/Binaries/Win64。
+2. 将 Stats beta.3 解压到临时目录，**只复制 GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods 下 FFWStats、FFWTeamSync 两个目录到已安装的 Mods**，保留 Data。
+3. **不要整份合并旧 beta.3 的 GameRoot**；旧包附带的兼容签名不能覆盖 Nexus 版本。保留框架全部配置与签名。
+4. 核对两个 enabled.txt 与组件文件，重启后按 F8。
 
-安装只需资源管理器复制文件。包内不附带 UE4SS，不覆盖 `mods.txt`。[完整安装、更新及卸载说明](INSTALL.zh-CN.md) · [启动签名说明](UE4SS-COMPATIBILITY.zh-CN.md)。
+[完整安装、迁移与回退指南](INSTALL.zh-CN.md)。公开 ZIP 附件不变。**beta.3 不提供 LAN/IP 传输**；新的 LAN 组件仍在开发中，不在当前下载包内。
 
 ## 操作与显示
 
 - **F8** 打开或关闭详细面板，可用鼠标点击标签、分项标题、翻页及关闭。
-- **Page Up / Page Down** 切换指标，**Home / End** 切换区间，**F10** 切换分项页。
+- **Page Up / Page Down** 切换指标，**Home / End** 切换区间。分项页使用鼠标；beta.3 的 F10 与 Nexus ConsoleEnabler 冲突，安装指南提供可选解绑方法。
 - 点击面板右上角的 **显示设置**，选择 HUD 数据、承伤细分和团队排行榜。设置自动保存，重启后保留。
 - 左上角显示自己的数据，并可显示前四名团队贡献。常驻 HUD 不占用鼠标，不影响瞄准。
 - 中英文跟随游戏语言切换；测量数据保留两位小数，次数保留整数。

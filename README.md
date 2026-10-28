@@ -8,17 +8,17 @@ Combat statistics, a configurable in-game HUD and a team contribution ranking fo
 
 ## Install
 
-1. Before launching the game, install compatible **UE4SS build 1181** separately. The bridge targets revision `8333063595fa3c49ad307f3b0f732accbb760d25` (`3.0.1-1181-g83330635`). Other builds need matching ABI validation.
-2. Close the game and download **FFWStats-0.1.0-beta.3.zip** from Releases.
-3. Open its `GameRoot` folder and copy the enclosed `FarFarWest` folder into your Steam game installation folder, merging folders.
-4. Confirm that the included `ue4ss/UE4SS_Signatures/ProcessLocalScriptFunction.lua` is present before the first launch. Also confirm that both `ue4ss/Mods/FFWStats` and `ue4ss/Mods/FFWTeamSync` exist. Both are required, including in solo play. Start the game normally.
+1. Fully exit and back up Mod Data. Install **UE4SS-FarFarWest 3.0.1.1183 Frostburn / UE5.8** from [Nexus mods/2](https://www.nexusmods.com/farfarwest/mods/2?tab=files) into FarFarWest/Binaries/Win64 under Steam’s game root.
+2. Extract Stats beta.3 to a temporary folder. **Copy only FFWStats and FFWTeamSync from GameRoot/FarFarWest/Binaries/Win64/ue4ss/Mods into installed Mods**, preserving Data.
+3. **Do not merge old beta.3 GameRoot wholesale.** Its fallback signature must not overwrite the Nexus signature. Preserve all framework files and settings.
+4. Check both enabled.txt markers and component files, restart, then press F8.
 
-Installation uses File Explorer only. The package does not include UE4SS or overwrite `mods.txt`. [Full installation and update instructions](INSTALL.en.md) · [Startup signature](UE4SS-COMPATIBILITY.en.md).
+[Complete installation, migration and rollback guide](INSTALL.en.md). Published ZIP attachments are unchanged. **Beta.3 does not provide LAN/IP transport.** A new LAN component is being developed and is not in the current download.
 
 ## Controls and display
 
 - **F8** opens/closes the detailed panel. Click tab titles, metric headings, paging controls and Close with the mouse.
-- **Page Up / Page Down** change the metric; **Home / End** change the interval; **F10** changes the subpage.
+- **Page Up / Page Down** change metrics; **Home / End** change scope. Use mouse paging: beta.3 F10 conflicts with Nexus ConsoleEnabler. See the installation guide for an optional Config.lua rebind.
 - **HUD options** in the panel select HUD values, breakdowns and the leaderboard. Choices are saved locally and survive restarts.
 - The compact HUD shows your own statistics and, optionally, the top four recorded team contributions. It does not take mouse focus during play.
 - English and Simplified Chinese follow the game language. Measurements use two decimals; event counts remain integers.
