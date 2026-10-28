@@ -4,7 +4,7 @@ local previous=_G.FFWStats
 if previous and previous.enabled then return previous end
 local source=debug.getinfo(1,'S').source
 local directory=assert(source:gsub('^@',''):gsub('\\','/'):match('^(.*)/'),'file-backed FFWStats entry required')
-local names={Config=true,Session=true,Stats=true,Store=true,Sync=true,Protocol=true,Json=true,
+local names={Connection=true,Config=true,Session=true,Stats=true,Store=true,Sync=true,Protocol=true,Json=true,
     GameAdapter=true,AttackAdapter=true,EventBuffer=true,Events=true,Panel=true,PanelUmg=true,Hud=true,HudSettings=true,CanvasView=true,SourceCatalog=true,Contribution=true,Locale=true,MousePanel=true}
 local modules,environment={},nil
 local globalRequire=require
@@ -35,10 +35,12 @@ local statusMessages={
     starting={'等待本机游戏界面。','Waiting for the local game interface.'},
     ready={'身份已核对，等待或记录当前任务。','Identity verified; ready for the current mission.'},
     bridge_unavailable={'同步桥尚未就绪；仍可查看面板。','Sync bridge is not ready; the panel remains available.'},
-    native_identity_pending={'等待 Steam 本机身份。','Waiting for the native Steam identity.'},
-    identity_mismatch={'Steam 与本机角色身份不一致，未启用团队同步。','Steam and local roster identity differ; team sync is disabled.'},
-    unmapped_roster_id={'角色表使用非 Steam 身份，无法可靠映射团队同步。','The roster uses a non-Steam identity; no trusted Steam mapping is available.'},
+    native_identity_pending={'等待本机传输身份；LAN 请先打开联机设置。','Waiting for transport identity; configure LAN in Connection settings.'},
+    identity_mismatch={'传输身份与当前角色不一致，暂停团队同步。','Transport and current player identity differ; team sync is suspended.'},
+    unmapped_roster_id={'当前为非 Steam 身份；局域网请打开联机设置选择 LAN。','Non-Steam player identity; select LAN in Connection settings for LAN/IP games.'},
     roster_pending={'等待本机角色进入当前角色表。','Waiting for the local player in the current roster.'},
+    duplicate_ids={'角色表存在重复 PlayerId，暂停团队同步。','Duplicate replicated PlayerIds; team sync is suspended.'},
+    host_conflict={'配对房主与游戏房主标记不一致，请重新配对。','Paired host conflicts with the game host. Pair again.'},
     host_pending={'等待已确认的房主身份。','Waiting for a confirmed host identity.'},
     ambiguous_host={'角色表存在多个房主标记，暂停团队同步。','Multiple host flags; team sync is suspended.'},
     epoch_unwritable={'无法保存启动序号；请检查 Mod 的 Data 目录权限，程序会重试。','Cannot persist the boot epoch. Check the mod Data directory permissions; retrying.'},
@@ -59,9 +61,9 @@ local epoch,epochError=Config.nextEpoch(S.paths.epoch)
 if not epoch then report('统计采集未启动：无法保存启动序号。请确认 Data 目录存在：'..tostring(epochError)) end
 local transport,transportReady
 local function refreshTransport()
-    transport=_G.FFWTeamSync
+    if S.connection then transport=S.connection:transport() else transport=_G.FFWTeamSync end
     transportReady=type(transport)=='table' and transport.apiVersion==1
-        and type(transport.localSteamId)=='function' and type(transport.poll)=='function'
+        and type(transport.localPlayerId or transport.localSteamId)=='function' and type(transport.poll)=='function'
         and type(transport.send)=='function' and type(transport.close)=='function'
     if S.session and transportReady then S.session.options.transport=transport end
 end
@@ -117,6 +119,25 @@ S.session=Session.new({path=S.paths.save,epoch=epoch,transport=transport,
     onSnapshot=function(snapshot,display)
         S.hud:update(snapshot,display);S.panel:update(snapshot,display)
     end})
+S.connection=environment.require('Connection').new{
+    path=S.paths.root..'/Data/connection-settings.json',getBridge=function()return _G.FFWTeamSync end,
+    getContext=function()return adapter and adapter:localIdentityContext() end,
+    isActive=function()
+        if not adapter or adapter:roomState()~='saloon' then return true end
+        return S.session.phase=='active' or S.session.phase=='finishing'
+    end,
+    onChanged=function(identityChanged)
+        if not S.enabled then return end
+        if identityChanged then
+            refreshTransport();S.identityReady=false
+            if adapter then adapter.pawnPlayers={};adapter:refreshRoster() end
+        end
+        if S.panel then S.panel.dirty=true end
+    end,
+}
+S.panel.options.connection=S.connection
+S.panel.options.readInput=function(id)return S.renderer:input(id)end
+
 local function beginPending()
     local pending=S.pendingStart
     if not pending then return end
@@ -134,11 +155,14 @@ local function retryEpoch()
     if epoch then S.session.epoch=epoch;S.session.options.epoch=epoch end
 end
 adapter=Adapter.new({
+    identity=function()return S.connection:identity()end,
     onRoster=function(roster,localId,hostId,diagnostics)
+        S.connection:onRoster(roster,diagnostics)
         refreshTransport();retryEpoch()
         local nativeId,nativeError
-        if transportReady then nativeId,nativeError=transport.localSteamId() end
+        if transportReady then nativeId,nativeError=(transport.localPlayerId or transport.localSteamId)() end
         S.identityReady=type(nativeId)=='string' and nativeId==localId and roster[localId]~=nil and hostId~=nil and roster[hostId]~=nil
+            and (not diagnostics or ((diagnostics.duplicateIds or 0)==0 and not diagnostics.hostConflict))
         local details={epochReady=epoch~=nil,nativeReady=type(nativeId)=='string',
             localInRoster=localId~=nil and roster[localId]~=nil,hostInRoster=hostId~=nil and roster[hostId]~=nil,
             observedMembers=diagnostics and diagnostics.members,unmappedIds=diagnostics and diagnostics.unmappedIds}
@@ -147,6 +171,8 @@ adapter=Adapter.new({
         elseif type(nativeId)~='string' then reason='native_identity_pending'
         elseif diagnostics and diagnostics.unmappedIds>0 and not localId then reason='unmapped_roster_id'
         elseif localId and nativeId~=localId then reason='identity_mismatch'
+        elseif diagnostics and (diagnostics.duplicateIds or 0)>0 then reason='duplicate_ids'
+        elseif diagnostics and diagnostics.hostConflict then reason='host_conflict'
         elseif not details.localInRoster then reason='roster_pending'
         elseif diagnostics and diagnostics.hostFlags>1 then reason='ambiguous_host'
         elseif not details.hostInRoster then reason='host_pending'
@@ -155,7 +181,7 @@ adapter=Adapter.new({
         if not S.identityReady then
             S.session:setRoster({},nil,nil,adapter:clock())
             if nativeError then report(nativeError)
-            elseif nativeId and localId and nativeId~=localId then report('本机控制器身份与 Steam 同步桥不一致，等待角色刷新。') end
+            elseif nativeId and localId and nativeId~=localId then report('本机控制器身份与同步桥不一致，等待角色刷新。') end
             return
         end
         S.panel.options.selfPlayerId=localId;S.panel.dirty=true
@@ -171,6 +197,7 @@ adapter=Adapter.new({
     end,
     onEnd=function(time) S.pendingStart=nil;S.session:finish(time) end,
     onWorldChanged=function()
+        if S.connection then S.connection:onWorldChanged()end
         S.inputGeneration=S.inputGeneration+1;S.identityReady=false;S.pendingStart=nil
         S.session:setRoster({},nil,nil)
         S.renderer:hide(true);S.hudRenderer:hide(true)
@@ -184,6 +211,7 @@ function S.update()
     return protected(function()
         if adapter.uiController then adapter:uiController() end
         local now=wallClock()
+        if S.connection.mode=='lan' then S.connection:update(adapter:roomState())end
         if now>=nextLanguage then L.refresh();nextLanguage=now+1 end
         -- Flush before poll: its roster callback can advance Stats' event clock.
         -- Flush after poll: lobby/end observations finalize only after queued hits.
@@ -203,6 +231,7 @@ function S.stop()
     ExecuteInGameThread(function()
         protected(function() adapter:flush();S.session:publish() end)
         if S.loopHandle then CancelDelayedAction(S.loopHandle) end
+        protected(function() S.connection:stop(true) end)
         protected(function() adapter:stop() end)
         protected(function() S.renderer:hide() end)
         protected(function() S.hudRenderer:hide() end)
@@ -255,5 +284,5 @@ if not S.mapHooksInstalled and type(RegisterLoadMapPreHook)=='function' and type
 end
 ExecuteInGameThread(function() if S.enabled then protected(function() adapter:install() end) end end)
 S.loopHandle=LoopInGameThreadWithDelay(Config.loopMilliseconds,S.update)
-print('[FFWStats] 已加载。F8 开关详情，可点击标签；新增团队贡献页。左上角显示自身 DPS 峰值、承伤和团队排行。PgUp/PgDn 指标；Home/End 区间；F10 分项页。覆盖保持部分数据/不可用。\n')
+print('[FFWStats] 已加载。F8 开关详情，可点击标签；新增团队贡献页。左上角显示自身 DPS 峰值、承伤和团队排行。PgUp/PgDn 指标；Home/End 区间；鼠标翻分项页；联机设置可配置 LAN/IP。覆盖保持部分数据/不可用。\n')
 return S

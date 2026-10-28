@@ -60,6 +60,47 @@ function UMG.layout(model, viewport)
     text(L.text("战斗统计"), 20, 10, 180, 22, palette.text, "title")
     button('close',L.choose('关闭','Close'),width-104,14,84)
     button('toggleSettings',L.choose('显示设置','HUD options'),width-245,14,128,true,{selected=model and model.settings~=nil})
+    button('toggleConnection',L.choose('联机设置','Connection'),width-375,14,120,true,{selected=model and model.connection~=nil})
+    if model and model.connection then
+        local c=model.connection
+        button('network-steam','Steam',20,78,160,not c.locked,{action='networkMode',value='steam',selected=c.mode=='steam'})
+        button('network-lan',L.choose('LAN / IP 直连','LAN / direct IP'),190,78,210,not c.locked,{action='networkMode',value='lan',selected=c.mode=='lan'})
+        text(L.choose('本机 PlayerId：','Local PlayerId: ')..tostring(c.rawId or '—')..'   '..(c.isHost and L.choose('房主','Host') or L.choose('客机','Guest')),420,86,width-440,15,palette.accent)
+        local function input(id,value,hint,x,y,w,reset)
+            commands[#commands+1]={kind='input',id=id,text=value,hint=hint,resetKey=reset,x=x,y=y,width=w,height=36,size=14}
+        end
+        if c.mode=='steam' then
+            text(c.message,20,146,width-40,18)
+            text(L.choose('双方安装 FFWStats 和 FFWTeamSync；进入同一个 Steam 房间后自动同步。','Install FFWStats and FFWTeamSync on each PC. Join the same Steam room to synchronize.'),20,204,width-40,15,palette.muted)
+            text(L.choose('局域网或 IP 直连请在上方选择 LAN。','For LAN/IP games, select LAN above.'),20,250,width-40,15,palette.muted)
+            return scene
+        end
+        text(c.isHost and L.choose('监听端口','Listening port') or L.choose('房主 IPv4 地址','Host IPv4 address'),20,130,400,15)
+        if not c.isHost then input('network-address',c.address,L.choose('例如 192.168.1.20','Example: 192.168.1.20'),20,162,width-250,c.revision)end
+        input('network-port',c.port,'46055',c.isHost and 20 or width-210,162,190,c.revision)
+        if c.isHost then text(L.choose('监听当前电脑的网络接口；队友填你的局域网地址。','Listens on this PC. Teammates enter your LAN address.'),230,169,width-250,14,palette.muted)end
+        if not c.isHost then
+            text(L.choose('房主为你的 PlayerId 生成的配对码','Pairing code assigned by the host to your PlayerId'),20,210,width-40,15)
+            input('network-token','',L.choose('粘贴配对码','Paste pairing code'),20,241,width-40,c.revision)
+        end
+        local top=c.isHost and 218 or 298
+        button('networkStart',c.isHost and L.choose('开启房主同步','Start host sync') or L.choose('连接房主','Connect to host'),20,top,210,not c.locked and not c.configured)
+        button('networkStop',L.choose('断开 / 清除配对','Stop / clear pairing'),240,top,220,not c.locked and c.configured)
+        text(c.message,20,top+48,width-40,14,c.error and '#FF8780' or palette.accent)
+        if c.isHost and c.configured then
+            text(L.choose('为对应 PlayerId 的队友生成专属配对码','Generate a code for the teammate with this PlayerId'),20,top+87,width-40,14,palette.muted)
+            for i,row in ipairs(c.rows)do
+                local y=top+118+(i-1)*35
+                text(short(row.name or '',12)..'   PlayerId '..tostring(row.rawId or '—')..(row.pending and L.choose('（等待角色表）',' (roster pending)')or ''),20,y,width-275,13)
+                button('pair-'..i,L.choose('生成 / 查看','Show code'),width-246,y-3,130,not row.pending,{action='networkPair',value=row.id,height=30,size=13})
+                button('revoke-'..i,L.choose('撤销','Revoke'),width-106,y-3,86,row.paired,{action='networkRevoke',value=row.id,height=30,size=13})
+            end
+            input('network-pairing',c.pairingCode,L.choose('选择队友后，在此全选并复制配对码','Select a teammate, then select all and copy the code here'),20,height-113,width-40,c.revision)
+            if c.pageCount>1 then button('previousPage','<',20,height-151,50,c.page>1,{height=28});button('nextPage','>',78,height-151,50,c.page<c.pageCount,{height=28});text(c.page..' / '..c.pageCount,140,height-148,120,12)end
+        end
+        text(L.choose('双方组件须同版本。配对码仅给对应队友；回标题或换房后重新配对。','Use matching components on all PCs. Share each code only with its assigned peer; pair again after leaving the room.'),20,height-48,width-40,12,palette.muted)
+        return scene
+    end
     if model and model.settings then
         local settings=model.settings
         text(L.choose('左上角显示项目','Corner HUD contents'),20,84,width-40,20,palette.accent)
@@ -99,8 +140,8 @@ function UMG.layout(model, viewport)
         text(model and model.message or L.text("尚无任务统计"), 20, legendTop + 8, width - 40, 18)
         return scene
     end
-    text(model.metricLabel, 200, 18, 200, 16, palette.accent)
-    text(short(model.scopeLabel, 16) .. "  " .. duration(model.duration), width - 470, 18, 210, 16)
+    text(model.metricLabel, 200, 18, 180, 16, palette.accent)
+    text(short(model.scopeLabel, 16) .. "  " .. duration(model.duration), 400, 18, width - 790, 16)
     if model.contribution then
         local board=model.contribution
         text(L.choose('团队贡献参考占比','Recorded team contribution'),20,legendTop,inner,18,palette.accent)

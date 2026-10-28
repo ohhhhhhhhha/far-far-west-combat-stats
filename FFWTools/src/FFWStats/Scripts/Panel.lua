@@ -29,7 +29,7 @@ local groups = {
     damageSources = {"伤害来源"}, incomingSources = {"承伤来源"},
 }
 Panel.metricOrder = {"overview", "teamContribution", "damage", "damageSources", "incomingDamage", "incomingSources", "kills", "healing", "shieldGained", "accuracy", "ammo", "revives"}
-Panel.defaultHotkeys = {toggle = "F8", previousMetric = "PAGE_UP", nextMetric = "PAGE_DOWN", previousScope = "HOME", nextScope = "END", nextPage = "TAB"}
+Panel.defaultHotkeys = {toggle = "F8", previousMetric = "PAGE_UP", nextMetric = "PAGE_DOWN", previousScope = "HOME", nextScope = "END", nextPage = false}
 local function metricGroup(metric)
     local selected = groups[metric] and metric or nil
     if not selected then
@@ -284,11 +284,11 @@ function Panel.build(snapshot, selection, options)
     result.page = ((result.page - 1) % result.pageCount) + 1
     local keys = options.hotkeys or {}
     result.controls = string.format(L.text("%s 隐藏   %s/%s 指标   %s/%s 区间   %s 分项页 %d/%d"),
-        keys.toggle or "F8", keys.previousMetric or "PgUp", keys.nextMetric or "PgDn", keys.previousScope or "Home", keys.nextScope or "End", keys.nextPage or "Tab", result.page, result.pageCount)
+        keys.toggle or "F8", keys.previousMetric or "PgUp", keys.nextMetric or "PgDn", keys.previousScope or "Home", keys.nextScope or "End", keys.nextPage or L.choose('鼠标','Mouse'), result.page, result.pageCount)
     if result.contribution then
         result.controls=string.format(L.choose('%s 隐藏   %s/%s 指标   %s 排行页 %d/%d',
             '%s hide   %s/%s metrics   %s ranking page %d/%d'),keys.toggle or 'F8',
-            keys.previousMetric or 'PgUp',keys.nextMetric or 'PgDn',keys.nextPage or 'F10',result.page,result.pageCount)
+            keys.previousMetric or 'PgUp',keys.nextMetric or 'PgDn',keys.nextPage or L.choose('鼠标','Mouse'),result.page,result.pageCount)
     end
     for _,key in ipairs({'title','metricLabel','missionLabel','controls','message'}) do
         if result[key] then result[key]=L.text(result[key]) end
@@ -311,6 +311,10 @@ function Panel.new(options)
 end
 function Controller:model()
     if not self.visible then return nil end
+    if self.showConnection and self.options.connection then
+        local connection=self.options.connection:model()
+        return {connection=connection,page=connection.page,pageCount=connection.pageCount,metric=self.metric}
+    end
     if self.showSettings and self.options.hudSettings then
         local settings=self.options.hudSettings:model(self.settingsPage or 1)
         return {settings=settings,page=settings.page,pageCount=settings.pageCount,metric=self.metric}
@@ -346,7 +350,7 @@ end
 function Controller:selectMetric(metric)
     if not groups[metric] and not definitions[metric] then return false end
     if metric=='teamContribution' then self.scopeId='mission' end
-    self.showSettings=false
+    self.showSettings=false;self.showConnection=false
     self.metric, self.page, self.dirty = metric, 1, true; self:refresh(); return true
 end
 function Controller:cycleMetric(step)
@@ -368,6 +372,7 @@ function Controller:cycleScope(step)
 end
 function Controller:nextPage(step)
     local model=self:model()
+    if self.showConnection then self.options.connection:nextPage(step);self:refresh();return end
     if self.showSettings then
         self.settingsPage=((model.page or 1)-1+(step or 1))%model.pageCount+1;self:refresh();return
     end
@@ -376,7 +381,15 @@ function Controller:nextPage(step)
 end
 function Controller:mouse(action,value)
     if not self.visible then return false end
-    if action=='toggleSettings' and self.options.hudSettings then self.showSettings=not self.showSettings;self:refresh()
+    if action=='toggleConnection' and self.options.connection then self.showConnection=not self.showConnection;self.showSettings=false;self:refresh()
+    elseif action=='networkMode' and self.options.connection then self.options.connection:setMode(value);self:refresh()
+    elseif action=='networkStart' and self.options.connection then
+        local read=self.options.readInput or function()end
+        self.options.connection:start{address=read('network-address'),port=read('network-port'),token=read('network-token')};self:refresh()
+    elseif action=='networkStop' and self.options.connection then self.options.connection:stop();self:refresh()
+    elseif action=='networkPair' and self.options.connection then self.options.connection:pair(value);self:refresh()
+    elseif action=='networkRevoke' and self.options.connection then self.options.connection:revoke(value);self:refresh()
+    elseif action=='toggleSettings' and self.options.hudSettings then self.showSettings=not self.showSettings;self.showConnection=false;self:refresh()
     elseif action=='toggleHud' and self.options.hudSettings then self.options.hudSettings:toggle(value);self:refresh()
     elseif action=='resetHud' and self.options.hudSettings then self.options.hudSettings:reset();self:refresh()
     elseif action=='selectMetric' then return self:selectMetric(value)

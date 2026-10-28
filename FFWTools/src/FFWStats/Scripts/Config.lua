@@ -2,7 +2,7 @@ local Store=require('Store')
 local Config={
     loopMilliseconds=250,rosterSeconds=2,viewSeconds=1,saveSeconds=5,
     hudEnabled=true,
-    hotkeys={toggle='F8',previousMetric='PAGE_UP',nextMetric='PAGE_DOWN',previousScope='HOME',nextScope='END',nextPage='F10'},
+    hotkeys={toggle='F8',previousMetric='PAGE_UP',nextMetric='PAGE_DOWN',previousScope='HOME',nextScope='END',nextPage=false},
     -- Runtime settlement callbacks have been observed; full attack/multiplayer
     -- coverage has not. Observed events remain partial until separately verified.
     verifiedHostMetrics={},localTracking={},

@@ -34,9 +34,11 @@ local function sortedKeys(t) local a = {}; for k in pairs(t) do a[#a + 1] = k en
 
 function Sync.new(o)
     assert(type(o) == "table" and type(o.transport) == "table", "native transport required")
-    local nativeId, nativeError = o.transport.localSteamId()
-    assert(text(nativeId), nativeError or "Steam ID unavailable")
-    assert(o.localId == nil or o.localId == nativeId, "local ID does not match native Steam identity")
+    local identity=o.transport.localPlayerId or o.transport.localSteamId
+    assert(type(identity)=="function","native player identity method required")
+    local nativeId, nativeError = identity()
+    assert(text(nativeId), nativeError or "native player ID unavailable")
+    assert(o.localId == nil or o.localId == nativeId, "local ID does not match native transport identity")
     assert(text(o.hostSteamId) and integer(o.epoch), "trusted host ID and persistent local epoch required")
     local isHost = nativeId == o.hostSteamId
     assert(not isHost or (text(o.sessionId) and integer(o.generation) and o.stats), "host requires confirmed mission, generation, and Stats object")
@@ -109,7 +111,7 @@ end
 function Sync:setRoster(roster)
     local nextRoster = {}
     for steamId, value in pairs(roster) do
-        assert(text(steamId), "Steam ID roster keys must be strings")
+        assert(text(steamId), "transport roster keys must be strings")
         local record = type(value) == "string" and {playerId = value} or value
         assert(type(record) == "table" and text(record.playerId), "stable PlayerId required")
         nextRoster[steamId] = {playerId = record.playerId, localEventKinds = kinds(record.localEventKinds)}

@@ -90,19 +90,60 @@ function A:realClock()
     local ok,value=pcall(function() return self.gp:GetRealTimeSeconds(controller) end)
     if ok and type(value)=='number' and value==value and value>=0 and value<math.huge then return value,key end
 end
+function A:identity()
+    return self.options.identity and self.options.identity() or {mode='steam'}
+end
+local function replicatedId(ps)
+    local value=field(ps,'PlayerId')
+    if type(value)=='number' and value==value and value>=0 and value<=2147483647 and value%1==0 then return string.format('%.0f',value) end
+end
+function A:localIdentityContext()
+    local controller=self:uiController();if not valid(controller) then return nil end
+    local ps=field(controller,'PlayerState');if not valid(ps) then return nil end
+    return {rawId=replicatedId(ps),isHost=authority(controller),worldKey=self.worldKey}
+end
+function A:roomState()
+    if self.loading then return 'loading' end
+    self:uiController()
+    local key=self.worldKey
+    if not key then
+        -- GameInstance owns the current world even on a title screen without a PC.
+        -- Multiple instances are ambiguous; never choose the first one.
+        for _,instance in ipairs(FindAllOf('BP_CanyonGameInstance_C') or {}) do
+            local instanceName=name(instance)
+            if instanceName and not instanceName:find('Default__',1,true) then
+                local current=worldKey(instance)
+                if current then if key and key~=current then return 'unknown' end;key=current end
+            end
+        end
+    end
+    if not key then return 'unknown' end
+    if key:find('/L_OpeningCredits',1,true) or key:find('/L_Map_TitleScreen',1,true) then return 'title' end
+    if key:find('/L_Lobby',1,true) then return 'saloon' end
+    return 'room'
+end
+
 function A:playerId(object)
     if self.loading or self.stopped then return nil end
     local objectName=name(object)
     if not valid(object) then return self.pawnPlayers[objectName] end
     local key=worldKey(object)
     if self.worldKey and key and key~=self.worldKey then return nil end
-    if not valid(self.psClass) or not valid(self.mp) then return nil end
+    local identity=self:identity()
+    if not valid(self.psClass) or (identity.mode~="lan" and not valid(self.mp)) then return nil end
     local ps
     if object:IsA(self.psClass) then ps=object
     else ps=field(object,'PlayerState') end
     if not valid(ps) or not ps:IsA(self.psClass) then return nil end
-    local id=str(self.mp:MP_UniqueNetIdToString(ps['Native Net ID']))
-    if not id or not id:match('^%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d$') then return nil end
+    local id
+    if identity.mode=='lan' then
+        local raw=replicatedId(ps)
+        if not raw or type(identity.room)~='string' or #identity.room~=32 or identity.room:find('[^0-9a-f]') then return nil end
+        id='lan:'..identity.room..':'..raw
+    else
+        id=str(self.mp:MP_UniqueNetIdToString(ps['Native Net ID']))
+        if not id or not id:match('^%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d$') then return nil end
+    end
     self.pawnPlayers[objectName]=id
     return id,ps
 end
@@ -150,15 +191,20 @@ function A:refreshRoster()
     if not valid(self.gp) then self.gp=cdo('/Script/Engine.GameplayStatics') end
     if not valid(self.mp) then self.mp=cdo('/Script/FarFarWest.MultiplayerStatics') end
     if not valid(self.psClass) then self.psClass=StaticFindObject(PS) end
-    if not valid(self.gp) or not valid(self.mp) or not valid(self.psClass) then return false end
+    local identity=self:identity()
+    if not valid(self.gp) or (identity.mode~="lan" and not valid(self.mp)) or not valid(self.psClass) then return false end
     self.gameState=self.gp:GetGameState(self.controller)
     if not valid(self.gameState) then return false end
-    local roster,players={},{};self.hostSteamId=nil
-    local diagnostics={members=0,unmappedIds=0,missingIds=0,hostFlags=0}
+    local roster,players,duplicates={},{},{};self.hostSteamId=nil
+    local diagnostics={members=0,unmappedIds=0,missingIds=0,hostFlags=0,duplicateIds=0,departedIds={}}
     each(self.gameState.PlayerArray,function(ps)
         diagnostics.members=diagnostics.members+1
         local id=self:playerId(ps)
-        if id then
+        if id and field(ps,'bIsInactive')==true then
+            diagnostics.departedIds[id]=true
+        elseif id and (roster[id] or duplicates[id]) then
+            diagnostics.duplicateIds=diagnostics.duplicateIds+1;duplicates[id]=true;roster[id]=nil;players[id]=nil
+        elseif id then
             local pawn=ps:GetPawn();if valid(pawn) then
                 local pawnName=name(pawn);self.pawnPlayers[pawnName]=id
                 self.currentPawn=self.currentPawn or {};self.currentPawn[id]=pawnName
@@ -177,6 +223,13 @@ function A:refreshRoster()
     if diagnostics.hostFlags>1 then self.hostSteamId=nil
     elseif diagnostics.hostFlags==0 and self.localId and roster[self.localId] and authority(self.controller) then
         self.hostSteamId=self.localId;roster[self.localId].isHost=true
+    end
+    if identity.mode=='lan' and identity.hostId then
+        if self.hostSteamId and self.hostSteamId~=identity.hostId then
+            diagnostics.hostConflict=true;self.hostSteamId=nil
+        elseif diagnostics.hostFlags==0 and roster[identity.hostId] then
+            self.hostSteamId=identity.hostId;roster[identity.hostId].isHost=true
+        end
     end
     self.players=players;self.roster=roster
     self.rosterDiagnostics=diagnostics
