@@ -18,6 +18,7 @@ function E.install()
     function methods:SetHintText(v) self.hint=v end
     function methods:SetFont(v) self.Font=v end
     function methods:SetAutoWrapText(v) self.AutoWrapText=v end
+    function methods:SetTextOverflowPolicy(v) self.TextOverflowPolicy=v end
     function methods:SetJustification(v) self.justification=v end
     function methods:SetHorizontalAlignment(v) self.horizontalAlignment=v end
     function methods:SetVerticalAlignment(v) self.verticalAlignment=v end
@@ -41,7 +42,14 @@ function E.install()
     function e.object(kind)
         e.serial=e.serial+1
         local o=setmetatable({address=e.serial,name=(kind or 'Object')..' Test_'..e.serial,kind=kind,Visibility=0,enabled=true,
-            children={},Font={Size=18},ColorAndOpacity={SpecifiedColor={}},WidgetStyle={TextStyle={Font={}},BackgroundColor={SpecifiedColor={}}}}, {__index=methods})
+            children={},Font={Size=18},ColorAndOpacity={SpecifiedColor={}},WidgetStyle={TextStyle={Font={}},BackgroundColor={SpecifiedColor={}}}}, {
+                __index=methods,
+                __newindex=function(object,key,value)
+                    assert(not (kind=='/Script/UMG.TextBlock' and key=='OverflowPolicy'),
+                        'UTextBlock has TextOverflowPolicy, not OverflowPolicy')
+                    rawset(object,key,value)
+                end,
+            })
         o.OnClicked={bindings={}}
         function o.OnClicked:Add(target,name)
             assert(type(target)=='table' and type(name)=='string','native delegate requires UObject + function name')

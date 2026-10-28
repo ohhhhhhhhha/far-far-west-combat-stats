@@ -92,8 +92,11 @@ T.test('passive renderer never takes mouse ownership and follows controller trav
         T.eq(e.controller.bShowMouseCursor,false,'passive statistics cannot enable the cursor')
         T.eq(e.controller.lookIgnores or 0,0);T.eq(e.nativeRecentersMouse(),true)
         T.eq(renderer.mouse,nil);T.eq(renderer.host.Visibility,3)
-        local first=renderer.host;e.newController();renderer:render(model)
-        T.eq(first.onScreen,false);T.eq(renderer.host.controller,e.controller)
+        local first=renderer.host;local oldCalls=0
+        first.SetVisibility=function() oldCalls=oldCalls+1;error('retired widget') end
+        first.RemoveFromParent=first.SetVisibility
+        e.newController();renderer:render(model)
+        T.eq(oldCalls,0);T.eq(renderer.host~=first,true);T.eq(renderer.host.controller,e.controller)
         renderer:hide();T.eq(e.controller.bShowMouseCursor,false)
     end)
     e.restore();if not ok then error(err,0) end

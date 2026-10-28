@@ -1,0 +1,197 @@
+package.path='FFWTools/src/FFWStats/Scripts/?.lua;FFWTools/tests/?.lua;'..package.path
+local T=require('stats_testlib');local Sim=require('stats_simulated_team');local Json=require('Json');local Store=require('Store')
+local ids=Sim.ids
+local function scenario(options,fn)
+    local b=Sim.new(options);local ok,err=pcall(fn,b);b:restore();assert(ok,err)
+end
+local function three(b)
+    for _,label in ipairs({'host','one','two'}) do b:make(label);assert(b:start(label)) end
+    b:advance(8)
+end
+T.test('three independent clients converge exact totals through loss duplicates reordered fragments and different clocks',function()
+    scenario({loss=true,duplicates=true,reorder=true},function(b)
+        three(b);assert(b:damage('host',700));assert(b:damage('one',500));assert(b:damage('two',250))
+        assert(b:localEvent('one',{kind='shot',attackId='trigger-1',accuracyMode='ordinary'}))
+        assert(b:localEvent('one',{kind='hit',attackId='trigger-1',validTarget=true}))
+        assert(b:localEvent('one',{kind='ammo',amount=7}))
+        assert(b:localEvent('two',{kind='reload'}));assert(b:localEvent('two',{kind='reload'}))
+        b:advance(35,.17)
+        for _,n in pairs(b.nodes) do
+            local p=assert(n.session:snapshot()).players
+            T.eq(p[ids.host].metrics.damage,700);T.eq(p[ids.one].metrics.damage,500);T.eq(p[ids.two].metrics.damage,250)
+            T.eq(p[ids.one].metrics.shots,1);T.eq(p[ids.one].metrics.hits,1);T.eq(p[ids.one].metrics.ammo,7)
+            T.eq(p[ids.two].metrics.reloads,2)
+        end
+        T.eq(b.dropped>0,true);T.eq(b.duplicated>0,true)
+        T.eq(b.nodes.one.session.sync:status().pendingEvents,0)
+        T.eq(b.nodes.two.session.sync:status().pendingEvents,0)
+    end)
+end)
+T.test('late second guest receives earlier authoritative totals without erasing existing players',function()
+    scenario({},function(b)
+        local early=b:rosterFor({'host','one'})
+        b:make('host',early);b:make('one',early);b:start('host');b:start('one');b:advance(4)
+        assert(b:damage('host',100));assert(b:damage('one',50));b:advance(2)
+        for _,n in pairs(b.nodes) do n.session:setRoster(b.roster,n.id,ids.host,n.mission) end
+        b:make('two');b:start('two',nil,false);assert(b:damage('two',200));b:advance(12)
+        local p=b.nodes.two.session:snapshot().players
+        T.eq(p[ids.host].metrics.damage,100);T.eq(p[ids.one].metrics.damage,50);T.eq(p[ids.two].metrics.damage,200)
+    end)
+end)
+T.test('a peer that never completes a snapshot cannot freeze updates for the other guest',function()
+    scenario({blackhole=ids.two},function(b)
+        three(b);assert(b:damage('host',123));b:advance(15)
+        T.eq(b.nodes.one.session:snapshot().players[ids.host].metrics.damage,123)
+        T.eq(b.nodes.two.session:snapshot(),nil)
+    end)
+end)
+T.test('guest process restart replays its saved unacknowledged event exactly once',function()
+    scenario({duplicates=true,reorder=true},function(b)
+        three(b);assert(b:localEvent('two',{kind='reload'}));assert(b.nodes.two.session:publish())
+        local oldEpoch=b.nodes.two.session.epoch
+        local restarted=b:make('two');T.eq(restarted.session.epoch>oldEpoch,true)
+        b:start('two','guest-two-restarted-world@0x2200:run:1',false);b:advance(15)
+        T.eq(b.nodes.host.session:snapshot().players[ids.two].metrics.reloads,1)
+        T.eq(restarted.session.sync:status().pendingEvents,0)
+        T.eq(restarted.session.sessionId,b.nodes.host.session.sessionId)
+    end)
+end)
+T.test('host component restart in the same confirmed local world preserves its checkpoint totals',function()
+    scenario({reorder=true},function(b)
+        three(b);assert(b:damage('one',321));assert(b:localEvent('two',{kind='reload'}));b:advance(8)
+        assert(b.nodes.host.session:publish());local sessionId=b.nodes.host.session.sessionId
+        local restarted=b:make('host');b:start('host',nil,false);b:advance(15)
+        T.eq(restarted.session.sessionId,sessionId)
+        for _,n in pairs(b.nodes) do
+            local p=n.session:snapshot().players
+            T.eq(p[ids.one].metrics.damage,321);T.eq(p[ids.two].metrics.reloads,1)
+        end
+    end)
+end)
+T.test('different per-machine world keys bind to one authority and remain distinct across the next mission',function()
+    scenario({duplicates=true,reorder=true},function(b)
+        local worlds={host='Desert.GameMaster@0x1110:run:1',one='Desert.GameMaster@0x2220:run:1',two='Desert.GameMaster@0x3330:run:7'}
+        for _,label in ipairs({'host','one','two'}) do b:make(label);b:start(label,worlds[label],true) end
+        b:advance(8);assert(b:damage('host',60));assert(b:damage('one',40));assert(b:damage('two',20));b:advance(10)
+        local old=b.nodes.host.session.sessionId
+        for label,n in pairs(b.nodes) do
+            T.eq(n.session.worldKey,worlds[label]);T.eq(n.session.sessionId,old)
+            local p=n.session:snapshot().players
+            T.eq(p[ids.host].metrics.damage,60);T.eq(p[ids.one].metrics.damage,40);T.eq(p[ids.two].metrics.damage,20)
+        end
+        b:start('one','Volcano.GameMaster@0x4440:run:2',true)
+        assert(b:localEvent('one',{kind='reload'}));b:advance(3)
+        T.eq(b.nodes.one.session:snapshot(),nil)
+        b:start('host','Volcano.GameMaster@0x5550:run:2',true)
+        b:start('two','Volcano.GameMaster@0x6660:run:8',true)
+        assert(b:damage('host',12));b:advance(15)
+        for _,n in pairs(b.nodes) do
+            T.eq(n.session.sessionId,b.nodes.host.session.sessionId);T.eq(n.session.sessionId~=old,true)
+            T.eq(n.session:snapshot().players[ids.host].metrics.damage,12)
+            T.eq(n.session:snapshot().players[ids.one].metrics.reloads,1)
+            T.eq(n.session:snapshot().players[ids.two].metrics.damage,nil)
+        end
+    end)
+end)
+T.test('host process restart observing a different world does not relabel old totals as a new run',function()
+    scenario({},function(b)
+        three(b);assert(b:damage('host',200));b:advance(8);assert(b.nodes.host.session:publish())
+        local old=b.nodes.host.session.sessionId
+        b:make('host');b:start('host','new-process-world@0x9000:run:1',false)
+        assert(b:damage('host',9));b:advance(12)
+        T.eq(b.nodes.host.session.sessionId~=old,true)
+        T.eq(b.nodes.host.session:snapshot().players[ids.host].metrics.damage,9)
+    end)
+end)
+T.test('leaving and rejoining closes native admission until a current roster reauthorizes the peer',function()
+    scenario({},function(b)
+        three(b);assert(b:damage('two',88));b:advance(6);assert(b.nodes.two.session:publish())
+        local reduced=b:rosterFor({'host','one'})
+        b.nodes.host.session:setRoster(reduced,ids.host,ids.host,b.nodes.host.mission)
+        b.nodes.one.session:setRoster(reduced,ids.one,ids.host,b.nodes.one.mission)
+        b.nodes.two=nil;b:advance(4)
+        T.eq(b.nodes.host.transport~=nil,true);T.eq(b.nodes.host.allowed[ids.two],nil)
+        for _,n in pairs(b.nodes) do n.session:setRoster(b.roster,n.id,ids.host,n.mission) end
+        b:make('two');b:start('two',nil,false);b:advance(12)
+        T.eq(b.nodes.two.session:snapshot().players[ids.two].metrics.damage,88)
+        T.eq(b.nodes.host.session.sync:status().peers[ids.two].state,'connected')
+    end)
+end)
+T.test('new mission rejects queued old traffic and pending next-mission events never enter the prior mission',function()
+    scenario({duplicates=true,reorder=true},function(b)
+        three(b);assert(b:damage('host',100));b:advance(6)
+        local old=b.nodes.host.session.sessionId
+        b:start('two','mission-b',true);assert(b:localEvent('two',{kind='reload'}));b:advance(3)
+        T.eq(b.nodes.two.session:snapshot(),nil)
+        T.eq(b.nodes.host.session:snapshot().players[ids.two].metrics.reloads,0,'declared local tracking knows zero, not the queued B event')
+        b:start('host','mission-b',true);b:start('one','mission-b',true)
+        assert(b:damage('host',10));b:advance(15)
+        for _,n in pairs(b.nodes) do
+            T.eq(n.session.sessionId~=old,true)
+            T.eq(n.session:snapshot().players[ids.host].metrics.damage,10)
+            T.eq(n.session:snapshot().players[ids.two].metrics.reloads,1)
+        end
+    end)
+end)
+T.test('final team totals drain before ending and remain in each separate profile in the lobby',function()
+    scenario({loss=true,duplicates=true,reorder=true},function(b)
+        three(b);assert(b:damage('host',75));assert(b:localEvent('one',{kind='reload'}));assert(b:localEvent('two',{kind='reload'}))
+        for _,n in pairs(b.nodes) do n.session:finish(n.mission) end
+        b:advance(30)
+        for _,n in pairs(b.nodes) do
+            local snapshot=assert(n.session:snapshot());T.eq(snapshot.status,'ended')
+            T.eq(snapshot.players[ids.host].metrics.damage,75)
+            T.eq(snapshot.players[ids.one].metrics.reloads,1);T.eq(snapshot.players[ids.two].metrics.reloads,1)
+            T.eq(Store.read(n.file).status,'ended')
+        end
+        local before=b.nodes.one.session:snapshot().time;b:advance(10)
+        T.eq(b.nodes.one.session:snapshot().time,before)
+        T.eq(b.nodes.host.file~=b.nodes.one.file and b.nodes.one.file~=b.nodes.two.file,true)
+    end)
+end)
+T.test('host-only installation keeps unobserved teammates unavailable and times out the end barrier',function()
+    scenario({},function(b)
+        b:make('host');b:start('host');assert(b:damage('host',90));b:advance(2)
+        b.nodes.host.session:finish(b.nodes.host.mission);b:advance(18)
+        local s=b.nodes.host.session:snapshot()
+        T.eq(s.status,'ended');T.eq(s.players[ids.host].metrics.damage,90)
+        T.eq(s.players[ids.one].metrics.damage,nil);T.eq(s.players[ids.two].metrics.reloads,nil)
+        T.eq(#b.nodes.host.session.sync:finishStatus().missingPeers,2)
+    end)
+end)
+T.test('return-to-lobby roster interruption reopens only trusted channels and drains final reports',function()
+    scenario({duplicates=true,reorder=true},function(b)
+        three(b);assert(b:damage('host',120));assert(b:localEvent('one',{kind='reload'}))
+        for _,n in pairs(b.nodes) do n.session:finish(n.mission);n.session:setRoster({},nil,nil,n.mission) end
+        b:advance(4)
+        for _,n in pairs(b.nodes) do n.session:setRoster(b.roster,n.id,ids.host,n.mission) end
+        b:advance(25)
+        for _,n in pairs(b.nodes) do
+            local s=assert(n.session:snapshot());T.eq(s.status,'ended')
+            T.eq(s.players[ids.host].metrics.damage,120);T.eq(s.players[ids.one].metrics.reloads,1)
+        end
+    end)
+end)
+T.test('guest-only installation never fabricates an authority snapshot',function()
+    scenario({},function(b)
+        b:make('one');b:start('one');assert(b:localEvent('one',{kind='reload'}));b:advance(20)
+        T.eq(b.nodes.one.session:snapshot(),nil)
+        T.eq(b.nodes.one.session.sync.bound,false)
+        T.eq(b.nodes.one.session.sync:status().peers[ids.host].state,'unavailable')
+    end)
+end)
+T.test('native sender and current roster binding reject forged sender IDs and revoked rooms',function()
+    scenario({},function(b)
+        three(b);local h=b.nodes.host;local g=b.nodes.one
+        local prior=g.session.epoch
+        local envelope=g.session.sync:_envelope('hello');envelope.senderId=ids.two;envelope.epoch=prior+1000
+        g.transport.send(ids.host,g.transport.channel,Json.encode(envelope));b:advance(1)
+        T.eq(h.session.sync.peers[ids.one].epoch,prior)
+        h.session:setRoster({},nil,nil,h.mission)
+        b:advance(3)
+        T.eq(h.allowed[ids.one],nil);T.eq(h.allowed[ids.two],nil)
+        T.eq(h.session.sync:status().peers[ids.one].state,'unavailable')
+        T.eq(h.session.sync:status().peers[ids.two].state,'unavailable')
+    end)
+end)
+T.finish()

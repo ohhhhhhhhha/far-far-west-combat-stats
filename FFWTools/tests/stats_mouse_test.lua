@@ -32,8 +32,10 @@ eq(native.buttons.close.label.text,'Close','language changes refresh existing na
 eq(native.buttons.nextMetric.label.text,'Metric >');eq(e.constructed,count)
 e.click(native.buttons.close.button);eq(panel.visible,false);eq(renderer.attached,false);eq(e.controller.bShowMouseCursor,false)
 e.click(native.buttons.nextMetric.button);eq(panel.metric,'incomingSources')
-panel:toggle();local old=e.controller;e.newController(false);panel:refresh()
-eq(old.bShowMouseCursor,false,'travel releases the old input owner');eq(e.controller.bShowMouseCursor,true)
+panel:toggle();local old=e.controller;local oldCalls=0
+old.SetIgnoreLookInput=function() oldCalls=oldCalls+1;error('retired controller') end
+e.newController(false);panel:refresh()
+eq(oldCalls,0,'replaced controller is not used for native cleanup');eq(e.controller.bShowMouseCursor,true)
 eq(native~=renderer.mouse,true)
 local current=renderer.mouse;e.controller.world=e.object('World');panel:refresh();eq(renderer.mouse~=current,true,'world check precedes model cache shortcut')
 panel:mouse('close');eq(e.controller.bShowMouseCursor,false)

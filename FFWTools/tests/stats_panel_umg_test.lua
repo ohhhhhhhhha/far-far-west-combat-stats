@@ -84,9 +84,12 @@ T.test("map owner changes rebuild the host even when the displayed last mission 
         local renderer = UMG.new({getController = function() return engine.controller end, viewport = function() return {width = 1024, height = 768, dpiScale = 1} end})
         local model = simpleModel(1000)
         renderer:render(model)
+        local oldCalls=0;local old=renderer.host
+        old.SetVisibility=function() oldCalls=oldCalls+1;error('retired widget') end
+        old.RemoveFromParent=old.SetVisibility
         engine.newController()
         renderer:render(model)
-        T.eq(#engine.hosts, 2); T.eq(engine.hosts[1].onScreen, false)
+        T.eq(#engine.hosts, 2);T.eq(oldCalls,0)
         T.eq(engine.hosts[2].controller, engine.controller); T.eq(engine.hosts[2].onScreen, true)
     end)
 end)
