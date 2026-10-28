@@ -58,14 +58,23 @@ end
 function A:report(message)
     if not self.errors[message] then self.errors[message]=true;print('[FFWStats] '..message..'\n') end
 end
-function A:gameTime(context)
-    if self.loading or self.stopped or not valid(context or self.controller) then return nil end
-    local key=worldKey(context or self.controller)
-    if self.worldKey and key and key~=self.worldKey then return nil end
+function A:clockContext()
+    -- Native time UFunctions dereference WorldContextObject. Re-select the
+    -- current local controller and require its world immediately before the
+    -- call; never forward an event actor, old manager, or merely cached PC.
+    local controller=self:uiController()
+    local key=self.worldKey
+    if not controller or not key then return nil end
+    if key:find('/L_OpeningCredits',1,true) or key:find('/L_Map_TitleScreen',1,true) then return nil end
+    return controller,key
+end
+function A:gameTime(_context)
+    local controller=self:clockContext()
+    if not controller then return nil end
     if not valid(self.gp) then self.gp=cdo('/Script/Engine.GameplayStatics') end
     if not valid(self.gp) then return nil end
-    local t=self.gp:GetTimeSeconds(context or self.controller)
-    return type(t)=='number' and t or nil
+    local t=self.gp:GetTimeSeconds(controller)
+    return type(t)=='number' and t==t and t>=0 and t<math.huge and t or nil
 end
 function A:clock()
     if self.active then
@@ -74,11 +83,12 @@ function A:clock()
     return self.lastClock
 end
 function A:realClock()
-    if self.loading or self.stopped or not valid(self.controller) then return nil end
+    local controller,key=self:clockContext()
+    if not controller then return nil end
     if not valid(self.gp) then self.gp=cdo('/Script/Engine.GameplayStatics') end
     if not valid(self.gp) then return nil end
-    local ok,value=pcall(function() return self.gp:GetRealTimeSeconds(self.controller) end)
-    if ok and type(value)=='number' and value==value and value>=0 and value<math.huge then return value,self.worldKey end
+    local ok,value=pcall(function() return self.gp:GetRealTimeSeconds(controller) end)
+    if ok and type(value)=='number' and value==value and value>=0 and value<math.huge then return value,key end
 end
 function A:playerId(object)
     if self.loading or self.stopped then return nil end
@@ -114,6 +124,10 @@ function A:uiController()
     end
     local key=worldKey(selected)
     if self.worldKey and key~=self.worldKey then self:retireWorld('world_changed') end
+    if not key then
+        self.controller,self.worldKey=nil,nil
+        return nil,'local controller world unavailable'
+    end
     self.controller,self.worldKey=selected,key
     return selected,not selected and 'local controller unavailable' or nil
 end
@@ -199,18 +213,21 @@ end
 function A:beginMission(manager,fromStartEvent)
     if self.loading or self.stopped then return end
     local managerWorld=worldKey(manager)
-    if self.worldKey and managerWorld and managerWorld~=self.worldKey then return end
+    if not managerWorld or (self.worldKey and managerWorld~=self.worldKey) then return end
     local key=name(manager)
     if not key or key:find('/L_Lobby',1,true) then return end
     local token=key..':'..tostring(manager:GetAddress())
     if self.managerToken==token and (self.active or not fromStartEvent) then return end
     if self.active then self:endMission('new_mission') end
     self:flush()
-    self:refreshRoster()
-    if not self.localId then return end
+    local generation=self.generation
+    if not self:refreshRoster() then return end
+    if not self.localId or self.generation~=generation or self.worldKey~=managerWorld then return end
+    local anchor=self:gameTime()
+    if anchor==nil or not self.localId or self.generation~=generation or self.worldKey~=managerWorld then return end
     self.missionSequence=(self.missionSequence or 0)+1
     self.managerToken=token;self.missionKey=token..':run:'..self.missionSequence
-    self.anchor=self:gameTime(manager);self.lastClock=0;self.active=true
+    self.anchor=anchor;self.lastClock=0;self.active=true
     self.deaths={};self.revived={};self.respawns={};self.bosses={};self.encounterId=nil;self.healthChanges={};self.shieldEvents={}
     if self.options.onStart then self.options.onStart(self.missionKey,fromStartEvent==true,self.localId==self.hostSteamId) end
 end
