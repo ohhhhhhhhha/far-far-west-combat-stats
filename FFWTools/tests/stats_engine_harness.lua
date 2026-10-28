@@ -3,7 +3,7 @@
 local H={}
 function H.new(options)
     options=options or {}
-    for _,name in ipairs({'last-mission.json','boot-epoch.txt','hud-settings.json'}) do
+    for _,name in ipairs({'last-mission.json','boot-epoch.txt','hud-settings.json','connection-settings.json'}) do
         for _,suffix in ipairs({'','.bak','.tmp'}) do os.remove('FFWTools/tests/Data/'..name..suffix) end
     end
     local e=dofile('FFWTools/tests/overlay_mouse_engine.lua').install()

@@ -106,7 +106,7 @@ T.test('one low-frequency game-thread loop polls roster every two seconds withou
     end
     T.eq(polls,2);T.eq(flushes,18)
     T.eq(h.keys.F5,nil);T.eq(h.keys.F6,nil)
-    T.eq(h.keys.TAB,nil,'Tab belongs to the game card hover menu');T.eq(type(h.keys.F10),'function')
+    T.eq(h.keys.TAB,nil,'Tab belongs to the game card hover menu');T.eq(h.keys.F10,nil,'F10 belongs to the Nexus ConsoleEnabler component')
     T.eq(type(h.keys.PAGE_UP),'function');T.eq(type(h.keys.HOME),'function')
 end)
 T.test('opening another mod panel hides statistics without stopping capture',function()
