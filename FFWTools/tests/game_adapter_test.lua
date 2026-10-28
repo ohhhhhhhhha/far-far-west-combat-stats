@@ -2,11 +2,14 @@ package.path='FFWTools/src/FFWStats/Scripts/?.lua;'..package.path
 local T=dofile('FFWTools/tests/stats_testlib.lua')
 local Adapter=require('GameAdapter')
 local enemyPath='/Game/Enemies/BP_Enemy.BP_Enemy_C:'
+local fixtureWorld={IsValid=function() return true end,GetFullName=function() return 'World fixture' end,
+    GetAddress=function() return 'fixture-world' end}
 local function object(key,props)
     local o=props or {};o.key=key
     function o:IsValid() return true end
     function o:GetFullName() return self.key end
     function o:GetAddress() return self.address or self.key end
+    function o:GetWorld() return self.world or fixtureWorld end
     function o:HasAuthority() return self.authoritative~=false end
     return o
 end
@@ -14,7 +17,7 @@ local function setup()
     local events,ends={},{}
     local a=Adapter.new({onEvent=function(e,t,own) events[#events+1]={e=e,t=t,own=own} end,
         onEnd=function(t,r) ends[#ends+1]={time=t,reason=r,eventCount=#events} end})
-    a.localId='a';a.hostSteamId='a';a.engineTime=10
+    a.localId='a';a.hostSteamId='a';a.engineTime=10;a.worldKey='World fixture@fixture-world'
     function a:refreshRoster() return true end
     function a:registerHooks() end
     function a:gameTime() return self.engineTime end
