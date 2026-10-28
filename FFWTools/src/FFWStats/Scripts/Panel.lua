@@ -220,7 +220,11 @@ function Panel.build(snapshot, selection, options)
     local result = {visible = true, title = "战斗统计", metric = metric, tabs = Panel.metricTabs(metric),
         legend = {}, charts = {}, scopeId = selection.scopeId or "mission"}
     if metric=='teamContribution' then result.scopeId='mission';result.scopeLocked=true end
-    if not snapshot then result.title=L.text(result.title);result.message = L.text("尚无任务统计"); return result end
+    if not snapshot then
+        result.title=L.text(result.title)
+        result.message=options.emptyMessage and options.emptyMessage() or L.text("尚无任务统计")
+        return result
+    end
     if snapshot.schemaVersion ~= 1 then result.title=L.text(result.title);result.message = L.text("统计数据格式不可用"); return result end
     local scope = result.scopeId == "mission" and snapshot or (snapshot.encounters or {})[result.scopeId]
     if not scope then scope, result.scopeId = snapshot, "mission" end

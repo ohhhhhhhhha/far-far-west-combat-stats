@@ -6,7 +6,8 @@ local function valid(object)
 end
 local function identity(object)
     if not valid(object) then return nil end
-    return object:GetFullName()..'@'..tostring(object:GetAddress())
+    local ok,key=pcall(function() return object:GetFullName()..'@'..tostring(object:GetAddress()) end)
+    return ok and key or nil
 end
 local function world(object)
     local ok,value=pcall(function() return object:GetWorld() end)
@@ -26,6 +27,12 @@ local requiredFunctions = {
     "/Script/UMG.TextBlock:SetText", "/Script/UMG.TextBlock:SetFont", "/Script/UMG.TextBlock:SetColorAndOpacity",
     "/Script/UMG.ProgressBar:SetPercent", "/Script/UMG.ProgressBar:SetFillColorAndOpacity",
 }
+local function asset(path)
+    local object=StaticFindObject(path)
+    if not valid(object) then LoadAsset(path);object=StaticFindObject(path) end
+    assert(valid(object),'panel asset unavailable: '..path)
+    return object
+end
 function Canvas.new(options)
     assert(options and options.getController, "getController must return the verified local player controller")
     return setmetatable({options = options, textPool = {}, barPool = {}, attached = false}, Renderer)
@@ -34,7 +41,8 @@ function Renderer:_create(controller)
     for _, path in ipairs(requiredFunctions) do assert(valid(StaticFindObject(path)), "missing UMG binding " .. path) end
     controller = controller or self.options.getController()
     assert(valid(controller), "local controller unavailable")
-    local hostClass = StaticFindObject("/Game/Interfaces/UI_Joker_Informations.UI_Joker_Informations_C")
+    local hostClass = asset("/Game/Interfaces/UI_Joker_Informations.UI_Joker_Informations_C")
+    local font = asset("/Game/Materials/Fonts/Font_Text.Font_Text")
     local library = StaticFindObject("/Script/UMG.WidgetBlueprintLibrary"):GetCDO()
     local host = library:Create(controller, hostClass, controller)
     assert(valid(host), "independent panel host creation failed")
@@ -48,12 +56,11 @@ function Renderer:_create(controller)
     root:SetVisibility(self.options.passive and 3 or 4);host:SetVisibility(2)
     self.host, self.root, self.tree, self.controller = host, root, tree, controller
     self.controllerKey,self.worldKey=identity(controller),world(controller)
-    self.font = StaticFindObject("/Game/Materials/Fonts/Font_Text.Font_Text")
-    assert(valid(self.font), "game Chinese font is not loaded")
+    self.font = font
     self.textClass, self.barClass = StaticFindObject("/Script/UMG.TextBlock"), StaticFindObject("/Script/UMG.ProgressBar")
     if not self.options.passive then
         self.mouse=require('MousePanel').new({host=host,root=root,tree=tree,font=self.font,controller=controller,library=library,
-            onAction=self.options.onAction})
+            getController=self.options.getController,onAction=self.options.onAction})
     end
     self.textPool, self.barPool, self.inputs, self.scrolls, self.attached = {}, {}, {}, {}, false
 end
@@ -68,34 +75,56 @@ function Renderer:_node(pool, index, class)
     if not item.attached then item.slot, item.attached = self.root:AddChildToCanvas(item.widget), true end
     return item
 end
-function Renderer:hide()
-    if self.mouse then self.mouse:hide() end
-    if valid(self.host) then self.host:SetVisibility(2) end
-    if valid(self.host) and self.attached then self.host:RemoveFromParent() end
+function Renderer:_isCurrent(controller)
+    return valid(controller) and self.worldKey~=nil and identity(controller)==self.controllerKey and world(controller)==self.worldKey
+end
+function Renderer:_discard(abandon)
+    local mouse,host,attached=self.mouse,self.host,self.attached
+    self.mouse,self.host,self.root,self.tree,self.controller=nil,nil,nil,nil,nil
+    self.controllerKey,self.worldKey,self.lastModel,self.lastScene,self.lastViewportKey=nil,nil,nil,nil,nil
+    self.textPool,self.barPool,self.inputs,self.scrolls,self.attached={},{},{},{},false
+    if mouse then pcall(function() mouse:dispose(abandon) end) end
+    if not abandon then
+        pcall(function() if valid(host) then host:SetVisibility(2) end end)
+        pcall(function() if attached and valid(host) then host:RemoveFromParent() end end)
+    end
+end
+function Renderer:hide(abandon)
+    local ok,controller=pcall(self.options.getController)
+    if abandon or (self.controller and (not ok or not self:_isCurrent(controller))) then self:_discard(true);return end
+    if self.mouse then pcall(function() self.mouse:hide() end) end
+    pcall(function() if valid(self.host) then self.host:SetVisibility(2) end end)
+    pcall(function() if valid(self.host) and self.attached then self.host:RemoveFromParent() end end)
     self.attached, self.lastModel = false, nil
 end
-function Renderer:viewport()
+function Renderer:viewport(controller)
     if self.options.viewport then return self.options.viewport() end
     local class = StaticFindObject("/Script/UMG.WidgetLayoutLibrary")
     assert(valid(class), "supply viewport() when WidgetLayoutLibrary is unavailable")
     local library = class:GetCDO()
-    local size = library:GetViewportSize(self.controller)
-    return {width = size.X, height = size.Y, dpiScale = library:GetViewportScale(self.controller)}
+    local size = library:GetViewportSize(controller or self.controller)
+    return {width = size.X, height = size.Y, dpiScale = library:GetViewportScale(controller or self.controller)}
 end
 function Renderer:render(model)
     if not model then self:hide(); return true end
     local controller = self.options.getController()
-    if not valid(controller) then self:hide(); return nil, "local controller unavailable" end
+    if not valid(controller) then self:_discard(true); return nil, "local controller unavailable" end
     if (self.mouse and not self.mouse:isCurrent(controller)) or (self.controller and
         (identity(controller)~=self.controllerKey or world(controller)~=self.worldKey)) then
-        self:hide();if self.mouse then self.mouse:dispose();self.mouse=nil end
-        self.host, self.root, self.tree = nil, nil, nil
-        self.textPool, self.barPool = {}, {}
+        self:_discard(true)
     end
-    if model == self.lastModel and self.attached and valid(self.host) then return false end
+    local viewport=self:viewport(controller)
+    local function positive(v) return type(v)=='number' and v==v and v>0 and v<math.huge end
+    if not viewport or not positive(viewport.width) or not positive(viewport.height) or not positive(viewport.dpiScale) then
+        self:hide();return nil,'viewport size or DPI is not ready'
+    end
+    local viewportKey=viewport.width..'/'..viewport.height..'/'..viewport.dpiScale
+    if model == self.lastModel and self.lastViewportKey==viewportKey and self.attached and valid(self.host) then return false end
     if not valid(self.host) then self:_create(controller) end
-    local scene = (assert(self.options.layout, "layout required"))(model, self:viewport())
-    local scale, texts, bars, buttons = 1 / scene.dpiScale, 0, 0, {}
+    local scene = (assert(self.options.layout, "layout required"))(model, viewport)
+    scene.fitScale=math.min(1,math.max(1,viewport.width-scene.margin*2)/scene.width,
+        math.max(1,viewport.height-scene.margin*2)/scene.height)
+    local scale, texts, bars, buttons = scene.fitScale / scene.dpiScale, 0, 0, {}
     local inputs,scrolls={},{}
     for _, command in ipairs(scene.commands) do
         if command.kind=='input' or command.kind=='scrollText' then
@@ -193,13 +222,16 @@ function Renderer:render(model)
     if not self.attached then self.host:AddToViewport(self.options.zOrder or 9900); self.attached = true end
     self.host:SetVisibility(self.options.passive and 3 or 4)
     if self.mouse then self.mouse:show() end
-    self.lastModel, self.lastScene = model, scene
+    self.lastModel, self.lastScene, self.lastViewportKey = model, scene, viewportKey
     return true
 end
 function Renderer:input(id)
+    local ok,controller=pcall(self.options.getController)
+    if not ok or not self:_isCurrent(controller) then self:_discard(true);return nil end
     local entry=self.inputs and self.inputs[id]
     if not entry or not valid(entry.widget) then return nil end
-    local value=entry.widget:GetText()
+    local read,value=pcall(function() return entry.widget:GetText() end)
+    if not read then return nil end
     if type(value)=='string' then return value end
     local ok,text=pcall(function() return value:ToString() end)
     return ok and text or nil

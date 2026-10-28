@@ -50,10 +50,15 @@ local function install()
         -- delegate signature, and jumps straight to return (bytecode @1728).
         -- UE4SS OnClicked:Add requires UObject + existing UFunction, not Lua.
         local pre,post=RegisterHook(clickPath,function(context)
+            if not next(routes) then return end
             local object=context:get();local route=routes[identity(object)]
             if not route then return end
             local owner,entry=route.owner,route.entry
-            if owner.active and entry.visible and entry.enabled and owner:ownsInput() and owner:isCurrent(owner.options.controller) then
+            local controller=owner.options.controller
+            if owner.options.getController then
+                local ok,current=pcall(owner.options.getController);controller=ok and current or nil
+            end
+            if owner.active and entry.visible and entry.enabled and owner:ownsInput() and owner:isCurrent(controller) then
                 if owner.options.onAction then owner.options.onAction(entry.action,entry.value) end
             end
         end)
@@ -68,7 +73,7 @@ function M.new(options)
 end
 function Panel:ownsInput() return shared('owner')==self.token end
 function Panel:isCurrent(controller)
-    return valid(self.options.host) and identity(controller)==self.controllerKey and world(controller)==self.worldKey
+    return identity(controller)==self.controllerKey and world(controller)==self.worldKey and valid(self.options.host)
 end
 function Panel:button(id,spec)
     local entry=self.buttons[id]
@@ -83,8 +88,10 @@ function Panel:button(id,spec)
         assert(valid(button) and valid(label),'mouse control creation failed')
         button.IsFocusable=false
         host.WidgetTree.RootWidget=button
-        label:SetVisibility(3);label:SetAutoWrapText(true)
-        button:AddChild(label)
+        label:SetVisibility(3);label:SetAutoWrapText(false);label:SetTextOverflowPolicy(1)
+        local labelSlot=button:AddChild(label)
+        labelSlot:SetHorizontalAlignment(0);labelSlot:SetVerticalAlignment(2)
+        labelSlot:SetPadding({Left=8,Top=2,Right=8,Bottom=2})
         local slot=self.options.root:AddChildToCanvas(host)
         entry={host=host,button=button,label=label,slot=slot,routeKey=identity(host)};self.buttons[id]=entry
         routes[entry.routeKey]={owner=self,entry=entry}
@@ -110,14 +117,15 @@ function Panel:show(focus)
     if inherited then cursor=shared('cursor')==true end
     self.priorCursor=cursor
     self.menu=menuFor(controller)
+    self.menuKey=identity(self.menu)
     self.priorUiMode=field(self.menu,'isUiMode')==true
-    if inherited and shared('menu')==identity(self.menu) then self.priorUiMode=shared('uiMode')==true end
+    if inherited and shared('menu')==self.menuKey then self.priorUiMode=shared('uiMode')==true end
     -- BP_Manager_Menu's tick recenters the mouse every 0.1s unless its own
     -- UI state is set. UE input mode/cursor visibility alone do not stop it.
     if self.menu then self.menu.isUiMode=true end
     self.ownsLook=inherited and shared('lookLock')==true
     if not self.ownsLook then controller:SetIgnoreLookInput(true);self.ownsLook=true end
-    shared('menu',identity(self.menu),true);shared('uiMode',self.priorUiMode,true);shared('lookLock',self.ownsLook,true)
+    shared('menu',self.menuKey,true);shared('uiMode',self.priorUiMode,true);shared('lookLock',self.ownsLook,true)
     shared('controller',self.controllerKey,true);shared('cursor',cursor,true);shared('owner',self.token,true)
     self.active=true
     controller.bShowMouseCursor=true
@@ -126,35 +134,57 @@ function Panel:show(focus)
     else self.options.library:SetInputMode_GameAndUIEx(controller,focus,0,false,false) end
     for _,entry in pairs(self.buttons) do entry.host:SetVisibility(entry.visible and 4 or 2) end
 end
-function Panel:hide()
+function Panel:hide(abandon)
     if self.active then
         self.active=false
         if self:ownsInput() then
             -- The later-opened overlay inherits the original cursor baseline.
             -- A delayed hide from the older overlay must not release its input.
-            local controller=self.options.controller
-            local otherUi=nativeMenuOpen(self.menu)
-            if valid(self.menu) and field(self.menu,'isUiMode')==true then
-                self.menu.isUiMode=self.priorUiMode or otherUi
+            local controller,menu=self.options.controller,self.menu
+            if abandon then
+                controller,menu=nil,nil
+                -- Seamless travel may keep the same PlayerController. Release
+                -- only our input lock through a freshly resolved current owner;
+                -- never recover input by dereferencing the cached old owner.
+                if self.options.getController then
+                    local ok,current=pcall(self.options.getController)
+                    if ok and identity(current)==self.controllerKey and world(current) then
+                        controller,menu=current,menuFor(current)
+                    end
+                end
             end
-            if valid(controller) then
-                if self.ownsLook then controller:SetIgnoreLookInput(false) end
-                if self.priorCursor or otherUi then self.options.library:SetFocusToGameViewport()
-                else self.options.library:SetInputMode_GameOnly(controller,false) end
-                controller.bShowMouseCursor=self.priorCursor or otherUi
+            if controller then
+                local otherUi=nativeMenuOpen(menu)
+                if valid(menu) and (not abandon or identity(menu)==self.menuKey) and field(menu,'isUiMode')==true then
+                    pcall(function() menu.isUiMode=self.priorUiMode or otherUi end)
+                end
+                if valid(controller) then
+                    if self.ownsLook then pcall(function() controller:SetIgnoreLookInput(false) end) end
+                    pcall(function()
+                        if self.priorCursor or otherUi then self.options.library:SetFocusToGameViewport()
+                        else self.options.library:SetInputMode_GameOnly(controller,false) end
+                    end)
+                    pcall(function() controller.bShowMouseCursor=self.priorCursor or otherUi end)
+                end
             end
             shared('owner',nil,true);shared('controller',nil,true);shared('cursor',nil,true)
             shared('menu',nil,true);shared('uiMode',nil,true);shared('lookLock',nil,true)
         end
     end
-    for _,entry in pairs(self.buttons) do if valid(entry.host) then entry.host:SetVisibility(2) end end
+    if not abandon then
+        for _,entry in pairs(self.buttons) do
+            pcall(function() if valid(entry.host) then entry.host:SetVisibility(2) end end)
+        end
+    end
 end
-function Panel:dispose()
-    self:hide()
+function Panel:dispose(abandon)
+    self:hide(abandon)
     for _,entry in pairs(self.buttons) do
         routes[entry.routeKey]=nil
-        if valid(entry.button) and valid(entry.host) then entry.button.OnClicked:Remove(entry.host,clickName) end
-        if valid(entry.host) then entry.host:RemoveFromParent() end
+        if not abandon then
+            pcall(function() if valid(entry.button) and valid(entry.host) then entry.button.OnClicked:Remove(entry.host,clickName) end end)
+            pcall(function() if valid(entry.host) then entry.host:RemoveFromParent() end end)
+        end
     end
     self.buttons={}
     if not next(routes) and hook then

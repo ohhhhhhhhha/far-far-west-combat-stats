@@ -42,7 +42,7 @@ function Sync.new(o)
     assert(not isHost or (text(o.sessionId) and integer(o.generation) and o.stats), "host requires confirmed mission, generation, and Stats object")
     local self = setmetatable({transport = o.transport, localId = nativeId, hostSteamId = o.hostSteamId,
         isHost = isHost, epoch = o.epoch, sessionId = o.sessionId, generation = isHost and o.generation or nil,
-        authorityEpoch = isHost and o.epoch or nil, bound = isHost, stats = o.stats, peers = {}, roster = {},
+        authorityEpoch = isHost and o.epoch or nil, bound = isHost, stats = o.stats, peers = {}, roster = {}, transfers = {},
         pending = {}, submitted = {}, attacks = {}, eventSequence = 0, originSequence = 0, lastAck = 0,
         now = 0, missionTime = 0, nextHello = 0, nextSnapshot = 0, lastEventSend = -math.huge,
         tracking = copy(o.localTracking or {}), onSession = o.onSession, onStatus = o.onStatus,
@@ -120,7 +120,7 @@ function Sync:setRoster(roster)
         if not nextRoster[id] and id ~= self.localId then
             self.transport.close(id)
             self.peers[id].ready = false
-            if self.transfer then self.transfer.cursors[id] = nil end
+            self.transfers[id]=nil
         end
     end
     self.roster = nextRoster
@@ -167,7 +167,7 @@ function Sync:_receiveHello(sender, packet)
         peer.ready, peer.everReady, peer.lastSeen, peer.tracking = true, true, self.now, kinds(packet.tracking or {})
         if changed then
             self:_hello(sender)
-            if self.transfer then self.transfer.cursors[sender] = 1
+            if self.transfers[sender] then self.transfers[sender].index,self.transfers[sender].retryAt=1,nil
             else self.nextSnapshot = self.now end
         end
         return true
@@ -375,7 +375,7 @@ function Sync:finish()
 end
 function Sync:forceSnapshot()
     if not self.isHost then return false, "only the authority sends snapshots" end
-    self.transfer, self.nextSnapshot, self.finalSnapshotSequence = nil, self.now, nil
+    self.transfers, self.nextSnapshot, self.finalSnapshotSequence = {}, self.now, nil
     return true
 end
 function Sync:_receiveSnapshotAck(sender, packet)
@@ -396,10 +396,15 @@ local function splitRanges(bytes, size)
     return ranges
 end
 function Sync:_startSnapshot()
-    if not self.isHost or self.transfer or self.now < self.nextSnapshot then return end
-    local cursors = {}
-    for id in pairs(self.roster) do if id ~= self.localId and self:_connected(id) then cursors[id] = 1 end end
-    if not next(cursors) then return end
+    if not self.isHost or self.now < self.nextSnapshot then return end
+    local targets = {}
+    for id in pairs(self.roster) do
+        if id ~= self.localId and self:_connected(id) and not self.transfers[id]
+            and (not self.finalSnapshotSequence or (self.peers[id].snapshotSequence or 0)<self.finalSnapshotSequence) then
+            targets[#targets+1]=id
+        end
+    end
+    if #targets==0 then return end
     self.nextSnapshot = self.now + 5
     local snapshot = self.stats:snapshot(self.missionTime)
     local packet, error = self.sender:packet(snapshot)
@@ -407,36 +412,50 @@ function Sync:_startSnapshot()
     local bytes = Json.encode({packet = packet, peerCoverage = self:status().peers})
     if #bytes > MAX_SNAPSHOT then self:_error("snapshot exceeds 64 MiB assembly limit; remote view is stale"); return end
     if self.finishing and snapshot.status == "ended" and not self.finalSnapshotSequence then self.finalSnapshotSequence = packet.sequence end
-    self.transfer = {bytes = bytes, ranges = splitRanges(bytes, self.chunkBytes), sequence = packet.sequence, cursors = cursors}
+    local frame={bytes=bytes,ranges=splitRanges(bytes,self.chunkBytes),sequence=packet.sequence}
+    for _,peer in ipairs(targets) do self.transfers[peer]={frame=frame,index=1} end
 end
 function Sync:_sendChunks()
-    local transfer = self.transfer
-    if not transfer then return end
+    -- Each peer retains at most one immutable frame. A slow peer can fill its
+    -- missing fragments while acknowledged peers receive fresh snapshots.
+    for peer,delivery in pairs(self.transfers) do
+        if not self:_connected(peer) or (self.peers[peer].snapshotSequence or 0)>=delivery.frame.sequence then
+            self.transfers[peer]=nil
+        elseif delivery.index>#delivery.frame.ranges then
+            if not delivery.retryAt then delivery.retryAt=self.now+2
+            elseif self.now>=delivery.retryAt then delivery.index,delivery.retryAt=1,nil end
+        end
+    end
     local budget = 4
     while budget > 0 do
         local progressed = false
-        for _, peer in ipairs(sortedKeys(transfer.cursors)) do
-            local index = transfer.cursors[peer]
+        for _, peer in ipairs(sortedKeys(self.transfers)) do
+            local delivery=self.transfers[peer]
+            local transfer,index=delivery.frame,delivery.index
             if self:_connected(peer) and index <= #transfer.ranges and budget > 0 then
                 local range = transfer.ranges[index]
                 local packet = self:_envelope("fragment")
                 packet.sequence, packet.index, packet.count, packet.totalBytes = transfer.sequence, index, #transfer.ranges, #transfer.bytes
                 packet.data = transfer.bytes:sub(range[1], range[2])
                 budget = budget - 1
-                if self:_send(peer, packet) then transfer.cursors[peer] = index + 1; progressed = true end
+                if self:_send(peer, packet) then delivery.index = index + 1; progressed = true end
             end
         end
         if not progressed then break end
     end
-    local remaining = false
-    for peer, index in pairs(transfer.cursors) do if self:_connected(peer) and index <= #transfer.ranges then remaining = true end end
-    if not remaining then self.transfer = nil end
 end
 function Sync:_receiveFragment(sender, packet)
     if self.isHost or sender ~= self.hostSteamId or not self.bound or not self:_binding(packet)
-        or packet.epoch ~= self.authorityEpoch or not integer(packet.sequence) or packet.sequence <= self.receiver.sequence
+        or packet.epoch ~= self.authorityEpoch or not integer(packet.sequence)
         or not integer(packet.index) or not integer(packet.count) or packet.count > 65536 or packet.index > packet.count
         or not integer(packet.totalBytes) or packet.totalBytes > MAX_SNAPSHOT or type(packet.data) ~= "string" then return false end
+    if packet.sequence<=self.receiver.sequence then
+        if packet.sequence==self.receiver.sequence and packet.index==1 then
+            -- The complete frame may have arrived but its ACK was lost.
+            local ack=self:_envelope('snapshot_ack');ack.snapshotSequence=packet.sequence;self:_send(sender,ack)
+        end
+        return false
+    end
     local a = self.assembly
     if a and packet.sequence < a.sequence then return false end
     if not a or packet.sequence > a.sequence then

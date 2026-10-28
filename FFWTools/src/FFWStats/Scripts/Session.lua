@@ -61,9 +61,16 @@ function S:joinCurrent(time)
     end
 end
 function S:setRoster(roster,localId,hostId,time)
-    self.roster,self.localId,self.hostId=roster,localId,hostId
-    if not localId or not hostId or not roster[localId] or not roster[hostId] then return end
-    if self.sync and self.sync.hostSteamId==hostId then self.sync:setRoster(roster) end
+    self.roster=roster
+    if not localId or not hostId or not roster[localId] or not roster[hostId] then
+        if self.sync then self.sync:setRoster({}) end
+        return
+    end
+    self.localId,self.hostId=localId,hostId
+    if self.sync then
+        if self.sync.hostSteamId==hostId and self.sync.localId==localId then self.sync:setRoster(roster)
+        else self.sync:setRoster({}) end
+    end
     if self.run and self.isHost then self:joinCurrent(self.endTime or math.max(self.time,self.clockBase+(time or 0))) end
 end
 function S:syncOptions()

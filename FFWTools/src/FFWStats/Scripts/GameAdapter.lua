@@ -27,6 +27,14 @@ local function name(o)
     local ok,n=pcall(function() return o:GetFullName() end)
     if ok and type(n)=='string' then return n end
 end
+local function worldKey(o)
+    if not valid(o) then return nil end
+    local ok,value=pcall(function() return o:GetWorld() end)
+    if not ok or not valid(value) then return nil end
+    local key=name(value)
+    local addressOK,address=pcall(function() return value:GetAddress() end)
+    return key and addressOK and key..'@'..tostring(address) or nil
+end
 local function authority(o)
     local ok,v=pcall(function() return o:HasAuthority() end);return ok and v==true
 end
@@ -45,12 +53,15 @@ local selection={
 }
 function A.new(options)
     return setmetatable({options=options or {},hooks={},definitions={},players={},pawnPlayers={},health={},healthChanges={},
-        shieldEvents={},deaths={},revived={},respawns={},bosses={},active=false,lastClock=0,errors={},buffer=EventBuffer.new()},A)
+        shieldEvents={},deaths={},revived={},respawns={},bosses={},active=false,lastClock=0,errors={},buffer=EventBuffer.new(),generation=0},A)
 end
 function A:report(message)
     if not self.errors[message] then self.errors[message]=true;print('[FFWStats] '..message..'\n') end
 end
 function A:gameTime(context)
+    if self.loading or self.stopped or not valid(context or self.controller) then return nil end
+    local key=worldKey(context or self.controller)
+    if self.worldKey and key and key~=self.worldKey then return nil end
     if not valid(self.gp) then self.gp=cdo('/Script/Engine.GameplayStatics') end
     if not valid(self.gp) then return nil end
     local t=self.gp:GetTimeSeconds(context or self.controller)
@@ -62,9 +73,19 @@ function A:clock()
     end
     return self.lastClock
 end
+function A:realClock()
+    if self.loading or self.stopped or not valid(self.controller) then return nil end
+    if not valid(self.gp) then self.gp=cdo('/Script/Engine.GameplayStatics') end
+    if not valid(self.gp) then return nil end
+    local ok,value=pcall(function() return self.gp:GetRealTimeSeconds(self.controller) end)
+    if ok and type(value)=='number' and value==value and value>=0 and value<math.huge then return value,self.worldKey end
+end
 function A:playerId(object)
-    local cached=self.pawnPlayers[name(object)];if cached then return cached end
-    if not valid(object) then return nil end
+    if self.loading or self.stopped then return nil end
+    local objectName=name(object)
+    if not valid(object) then return self.pawnPlayers[objectName] end
+    local key=worldKey(object)
+    if self.worldKey and key and key~=self.worldKey then return nil end
     if not valid(self.psClass) or not valid(self.mp) then return nil end
     local ps
     if object:IsA(self.psClass) then ps=object
@@ -72,20 +93,56 @@ function A:playerId(object)
     if not valid(ps) or not ps:IsA(self.psClass) then return nil end
     local id=str(self.mp:MP_UniqueNetIdToString(ps['Native Net ID']))
     if not id or not id:match('^%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d$') then return nil end
-    self.pawnPlayers[name(object)]=id
+    self.pawnPlayers[objectName]=id
     return id,ps
 end
+-- UEHelpers.GetPlayerController also accepts IsPlayerController(), which can
+-- select a remote controller on a listen server. UI ownership does not depend
+-- on PlayerState, the network ID or the statistics handshake.
+function A:uiController()
+    if self.loading or self.stopped then return nil,'world transition in progress' end
+    local selected
+    for _,controller in ipairs(FindAllOf('PlayerController') or {}) do
+        local ok,localPlayer=pcall(function() return valid(controller) and controller:IsLocalPlayerController() end)
+        if ok and localPlayer==true then
+            if selected then
+                if self.worldKey then self:retireWorld('ambiguous_controller') end
+                self.controller=nil;return nil,'multiple local controllers during travel'
+            end
+            selected=controller
+        end
+    end
+    local key=worldKey(selected)
+    if self.worldKey and key~=self.worldKey then self:retireWorld('world_changed') end
+    self.controller,self.worldKey=selected,key
+    return selected,not selected and 'local controller unavailable' or nil
+end
+-- No reads from retired Unreal objects here: finish at the last observed time,
+-- drain already-normalized events, invalidate callbacks, then drop references.
+function A:retireWorld(reason,loading)
+    self.generation=self.generation+1;self.loading=loading==true
+    if self.active and not self.endRequested then self.endRequested={time=self.lastClock,reason=reason} end
+    self:flush()
+    self.controller,self.worldKey,self.gameState,self.psClass,self.gp,self.mp=nil,nil,nil,nil,nil,nil
+    self.localId,self.hostSteamId,self.managerToken,self.anchor=nil,nil,nil,nil
+    self.players,self.roster,self.pawnPlayers,self.currentPawn={},{},{},{}
+    self.health,self.healthChanges,self.shieldEvents,self.deaths,self.revived,self.respawns,self.bosses={},{},{},{},{},{},{}
+    self.encounterId=nil
+    if self.options.onWorldChanged then self.options.onWorldChanged(reason) end
+end
 function A:refreshRoster()
-    local helpers=require('UEHelpers');self.controller=helpers.GetPlayerController()
+    self:uiController()
     if not valid(self.controller) then return false end
-    self.gp=self.gp or cdo('/Script/Engine.GameplayStatics')
-    self.mp=self.mp or cdo('/Script/FarFarWest.MultiplayerStatics')
-    self.psClass=self.psClass or StaticFindObject(PS)
+    if not valid(self.gp) then self.gp=cdo('/Script/Engine.GameplayStatics') end
+    if not valid(self.mp) then self.mp=cdo('/Script/FarFarWest.MultiplayerStatics') end
+    if not valid(self.psClass) then self.psClass=StaticFindObject(PS) end
     if not valid(self.gp) or not valid(self.mp) or not valid(self.psClass) then return false end
     self.gameState=self.gp:GetGameState(self.controller)
     if not valid(self.gameState) then return false end
     local roster,players={},{};self.hostSteamId=nil
+    local diagnostics={members=0,unmappedIds=0,missingIds=0,hostFlags=0}
     each(self.gameState.PlayerArray,function(ps)
+        diagnostics.members=diagnostics.members+1
         local id=self:playerId(ps)
         if id then
             local pawn=ps:GetPawn();if valid(pawn) then
@@ -94,13 +151,22 @@ function A:refreshRoster()
             end
             players[id]=ps
             roster[id]={playerId=id,name=str(ps:GetPlayerName()) or '玩家',isHost=field(ps,'isHost')==true}
-            if roster[id].isHost then self.hostSteamId=id end
+            if roster[id].isHost then self.hostSteamId=id;diagnostics.hostFlags=diagnostics.hostFlags+1 end
             if type(ps.playerHeal)=='number' and self.health[id]==nil then self.health[id]=ps.playerHeal end
+        else
+            local ok,raw=pcall(function() return str(self.mp:MP_UniqueNetIdToString(ps['Native Net ID'])) end)
+            if ok and type(raw)=='string' and raw~='' then diagnostics.unmappedIds=diagnostics.unmappedIds+1
+            else diagnostics.missingIds=diagnostics.missingIds+1 end
         end
     end)
     self.localId=self:playerId(field(self.controller,'PlayerState'))
+    if diagnostics.hostFlags>1 then self.hostSteamId=nil
+    elseif diagnostics.hostFlags==0 and self.localId and roster[self.localId] and authority(self.controller) then
+        self.hostSteamId=self.localId;roster[self.localId].isHost=true
+    end
     self.players=players;self.roster=roster
-    if self.options.onRoster then self.options.onRoster(roster,self.localId,self.hostSteamId) end
+    self.rosterDiagnostics=diagnostics
+    if self.options.onRoster then self.options.onRoster(roster,self.localId,self.hostSteamId,diagnostics) end
     return true
 end
 function A:category(id,item,element,verifiedDot)
@@ -131,6 +197,9 @@ function A:flush()
     return n
 end
 function A:beginMission(manager,fromStartEvent)
+    if self.loading or self.stopped then return end
+    local managerWorld=worldKey(manager)
+    if self.worldKey and managerWorld and managerWorld~=self.worldKey then return end
     local key=name(manager)
     if not key or key:find('/L_Lobby',1,true) then return end
     local token=key..':'..tostring(manager:GetAddress())
@@ -162,21 +231,30 @@ function A:bind(path,callback,native)
     self.definitions[path]={callback=callback,native=native}
 end
 function A:registerHooks()
+    if self.loading or self.stopped then return end
     for path,definition in pairs(self.definitions) do
         local fn=StaticFindObject(path)
         if valid(fn) then
             local pointer=fn:GetAddress();local old=self.hooks[path]
-            if not old or old.pointer~=pointer then
+            if not old or old.pointer~=pointer or old.generation~=self.generation then
                 if old then pcall(UnregisterHook,path,old.pre,old.post) end
+                local generation=self.generation
                 local wrapped=function(context,...)
-                    local args={};for i,param in ipairs({...}) do args[i]=param:get() end
-                    local ok,err=pcall(definition.callback,context:get(),table.unpack(args,1,select('#',...)))
+                    if self.stopped or self.loading or self.generation~=generation then return end
+                    local params,argc={...},select('#',...)
+                    local ok,err=pcall(function()
+                        local object=context:get()
+                        local key=worldKey(object)
+                        if self.worldKey and key and key~=self.worldKey then return end
+                        local args={};for i=1,argc do args[i]=params[i]:get() end
+                        definition.callback(object,table.unpack(args,1,argc))
+                    end)
                     if not ok then self:report(path..': '..tostring(err)) end
                 end
                 local ok,pre,post
                 if definition.native then ok,pre,post=pcall(RegisterHook,path,function() end,wrapped)
                 else ok,pre,post=pcall(RegisterHook,path,wrapped) end
-                if ok then self.hooks[path]={pointer=pointer,pre=pre,post=post} else self:report(tostring(pre)) end
+                if ok then self.hooks[path]={pointer=pointer,pre=pre,post=post,generation=generation} else self:report(tostring(pre)) end
             end
         end
     end
@@ -286,8 +364,9 @@ function A:install()
     self:registerHooks()
 end
 function A:poll()
-    self:registerHooks()
+    if self.loading or self.stopped then return end
     if not self:refreshRoster() then return end
+    self:registerHooks()
     local location=name(self.controller) or ''
     if location:find('/L_Lobby',1,true) or location:find('/L_Map_TitleScreen',1,true) then
         self:endMission('lobby');self.managerToken=nil;return
@@ -302,6 +381,7 @@ function A:poll()
     end
 end
 function A:stop()
+    self.stopped=true;self.generation=self.generation+1;self.active=false
     for path,h in pairs(self.hooks) do pcall(UnregisterHook,path,h.pre,h.post) end
     self.hooks={}
 end

@@ -25,11 +25,14 @@ end
 local function duration(seconds) return string.format("%02d:%02d", math.floor(seconds / 60), math.floor(seconds % 60)) end
 function UMG.layout(model, viewport)
     viewport = viewport or {width = 1024, height = 768, dpiScale = 1}
-    local width, height = math.min(1180, viewport.width - 48), math.min(760, viewport.height - 48)
+    -- Keep controls on a usable design canvas; CanvasView scales the entire
+    -- scene into smaller physical windows instead of creating negative slots.
+    local width, height = math.min(1180, math.max(1024,viewport.width) - 48), math.min(760, math.max(720,viewport.height) - 48)
     local scene = {width = width, height = height, margin = 24, dpiScale = viewport.dpiScale or 1, commands = {}}
     local commands = scene.commands
     local function text(value, x, y, w, size, tint, role)
-        commands[#commands + 1] = {kind = "text", text = value, x = x, y = y, width = w, height = size * 1.6, size = size, color = tint or palette.text, role = role}
+        local _,breaks=tostring(value):gsub('\n','')
+        commands[#commands + 1] = {kind = "text", text = value, x = x, y = y, width = w, height = size * 1.6 * (breaks+1), size = size, color = tint or palette.text, role = role}
     end
     local function bar(x, y, w, h, fraction, tint, role, alpha)
         commands[#commands + 1] = {kind = "bar", x = x, y = y, width = w, height = h, fraction = fraction, color = tint, role = role, alpha = alpha or 1}
