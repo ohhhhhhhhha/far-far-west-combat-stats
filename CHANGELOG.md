@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-beta.3 — 2026-10-29
+
+- Native clock calls use a freshly selected local controller with a valid world; event actors/managers are never forwarded.
+- Skip OpeningCredits/title/missing worlds and recheck manager world/generation before mission start.
+- Ten clock-context regressions reproduced on beta.2; 27-file isolated suite. Original B08 dump confirms an inaccessible WorldContext argument, while live-game crash verification remains pending.
+- Original diagnostic files and the 1183 DLL are now available for local analysis; no raw logs, dumps or player data are redistributed.
+
 ## 0.1.0-beta.2 — 2026-10-29
 
 - Verify local UI ownership and load panel resources without depending on another Mod.

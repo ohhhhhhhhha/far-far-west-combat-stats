@@ -1,12 +1,12 @@
 {
   "id": "FFWStats",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "channel": "beta",
   "date": "2026-10-29",
   "framework": "UE4SS",
   "ue4ssBuild": "3.0.1-1181-g83330635",
   "installation": "manual-copy",
   "multiplayerValidation": "pending",
-  "validation": "26 Lua test files; engine-boundary and host + two guest simulations; new native game acceptance pending",
-  "nativeBridge": "Unchanged 1181 binary; 1183 source has no public-header changes but binary validation remains pending"
+  "validation": "27 Lua test files; ten native-clock-context scenarios fail on beta.2 and pass on beta.3; native-game acceptance pending",
+  "nativeBridge": "Unchanged native bridge. Supplied 1183 DLL resolves 28 imports; no native execution certification."
 }

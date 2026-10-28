@@ -1,6 +1,12 @@
-# 0.1.0-beta.2 validation and limits
+# 0.1.0-beta.3 validation and limits
 
 This candidate changes the Lua statistics component. The native FFWTeamSync binary is unchanged.
+
+## Added in beta.3: native clock context
+
+The original B08 minidump confirms that GetTimeSeconds received an inaccessible WorldContext: the first native argument equals the read-fault address. This identifies the native function and argument failure, not the originating Lua instance.
+
+Both game-time and real-time calls now reselect a unique local controller and require its valid world immediately before the native call. Event actors and managers are never passed as WorldContext. OpeningCredits/title worlds and missing worlds are skipped. Mission start rechecks the saved manager-world identity and callback generation after roster refresh and clock acquisition; a retired manager cannot start a run in a replacement lobby world. Ten boundary regressions fail against beta.2 and pass with these changes, including an explicit inaccessible-context sentinel. The native boundary is simulated; no native AV is deliberately executed.
 
 ## Reproduced defects and changes
 
@@ -14,7 +20,7 @@ This candidate changes the Lua statistics component. The native FFWTeamSync bina
 
 ## Repeatable evidence
 
-The isolated Lua 5.4 suite runs 26 test files, including 33 focused new scenarios. Failures were reproduced on the saved original source before the fixes. Engine, native transport and thread scheduling are boundary doubles; the entry point, adapter, panel model, renderer, Session, Sync, Protocol, Stats and Store execute production code.
+The isolated Lua 5.4 suite runs 27 test files, including 43 focused new scenarios. Failures were reproduced on the saved original source before the fixes. Engine, native transport and thread scheduling are boundary doubles; the entry point, adapter, panel model, renderer, Session, Sync, Protocol, Stats and Store execute production code.
 
 The multi-client suite uses a host and two guests with independent clocks, profiles and queues. It covers distinct per-machine world keys, late join, packet loss, duplicate/reordered fragments, blocked peers, guest process restart, same-world host component restart, a host process observing a different world, reconnect, new missions, return to lobby, revoked roster admission, forged sender IDs and partially installed teams. Hand-checked totals converge without duplicate credit. A non-Steam/EOS ID is not converted into a fabricated Steam account.
 
@@ -28,4 +34,4 @@ Static inspection resolves all 28 UE4SS imports and nine Steam flat-API symbols 
 - An actual LAN/non-Steam roster that has no verifiable Steam mapping. LAN flags alone neither establish nor disprove Steam identity. The panel explains the unavailable mapping and does not send to guessed accounts.
 - Windows systems whose Lua narrow-file APIs cannot open a non-ASCII installation path. Node extraction into paths containing spaces/Chinese characters and Lua virtual-path tests are not native Windows encoding validation. Use an ASCII-named Steam library path if framework/script loading fails there; do not change the system locale or registry for this Mod.
 
-The original report's `_mod_fix*` evidence files were not present in the supplied local locations. Its 1183 environment must not be confused with the observed local 1181 baseline.
+The original diagnostic directories and Win64 archive arrived after beta.2 was frozen. The received main/adapter/config/sync sources match the beta.1 baseline, and the bridge DLL matches the distributed binary. The 1183 x64 DLL resolves all 28 bridge imports. The logs contain the combined wait message but no separate local/native/roster/host/epoch values, so the exact B06 gate still needs fresh runtime diagnostics. These files were inspected locally and are not redistributed.

@@ -237,6 +237,7 @@
     "FFWTools/tests/session_lifecycle_test.lua",
     "FFWTools/tests/session_store_test.lua",
     "FFWTools/tests/stats_bilingual_test.lua",
+    "FFWTools/tests/stats_clock_context_test.lua",
     "FFWTools/tests/stats_config_test.lua",
     "FFWTools/tests/stats_contribution_test.lua",
     "FFWTools/tests/stats_core_test.lua",
