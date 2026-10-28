@@ -6,10 +6,9 @@
 #include <string>
 #include <string_view>
 #include <steamnetworkingtypes.h>
+#include "TransportTypes.hpp"
 
 namespace ffw {
-inline constexpr int kChannel = 0x464657;
-inline constexpr std::size_t kMaxPayload = 256 * 1024;
 
 // Only the flat ABI exported by the game's already-loaded steam_api64.dll.
 // There is no Steam initialization, callback pump, or owned Steam connection.
@@ -27,15 +26,6 @@ struct SteamApi {
 
 SteamApi bindLoadedSteam(std::string& error);
 
-struct ValueResult {
-    std::string value;
-    std::string error;
-};
-struct PollResult {
-    std::string senderId;
-    std::string payload;
-    std::string error;
-};
 
 class Transport {
 public:
